@@ -4,11 +4,12 @@
 #include <stddef.h>
 #include <string.h>
 
-// FIXME: Restore
-//#include "platform.h"
-//#ifdef PLATFORM_HAS_ATOMICS
+#include "cstone/platform.h"
+#ifdef PLATFORM_HAS_ATOMICS
 #  include <stdatomic.h>
-//#endif
+#else
+#  include "locking.h"
+#endif
 
 #include "util/range_strings.h"
 #include "util/search.h"
@@ -516,17 +517,16 @@ Returns:
   A new sequential ID
 */
 uint32_t prop_new_global_id(void) {
-// FIXME: Restore
-//#ifdef PLATFORM_HAS_ATOMICS
-#if 1
+
+#ifdef PLATFORM_HAS_ATOMICS
   static volatile atomic_uint_least32_t next_id = 1;
   uint32_t id = atomic_fetch_add(&next_id, 1);
 
 #else
   static volatile uint32_t next_id = 1;
-  taskENTER_CRITICAL();
+  ENTER_CRITICAL();
     uint32_t id = next_id++;
-  taskEXIT_CRITICAL();
+  EXIT_CRITICAL();
 #endif
 
   return PROP_AUX_24(id);
