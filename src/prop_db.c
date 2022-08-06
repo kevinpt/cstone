@@ -12,9 +12,9 @@
 #include "cstone/platform.h"
 #include "cstone/prop_id.h"
 #include "cstone/prop_db.h"
-#include "prop_serialize.h"
+#include "cstone/prop_serialize.h"
 #include "blocking_io.h"
-#include "term_color.h"
+#include "cstone/term_color.h"
 
 
 #define MAX_PROP_NAME_LEN  48
