@@ -1,5 +1,32 @@
-file(GLOB_RECURSE CSTONE_SOURCE
-  "src/*.c"
+set(CSTONE_SOURCE
+    src/debug.c
+    src/led_blink.c
+    src/isr_queue.c
+    src/console_history.cpp
+    src/prop_id.c
+    src/prop_db.c
+    src/prop_serialize.c
+    src/prop_flags.c
+    src/log_db.c
+    src/log_index.c
+    src/log_info.c
+    src/log_compress.c
+    src/log_props.c
+    src/log_ram.c
+    src/umsg.c
+    src/util/histogram.c
+    src/util/bsd_string.c
+    src/util/search.c
+    src/util/dhash.c
+    src/util/range_strings.c
+    src/util/getopt_r.c
+    src/util/mempool.c
+    src/util/crc8.c
+    src/util/crc16.c
+    src/util/hex_dump.c
+    src/util/intmath.c
+    src/util/string_ops.c
+    src/util/glob.c
 )
 
 #set_source_files_properties(${XLIB_SOURCE}
@@ -21,7 +48,7 @@ target_include_directories(cstone
     "../../${FREERTOS_ROOT}/include"
     "../../${FREERTOS_PORT_INCLUDE}"
     "../../${FREERTOS_CFG_INCLUDE}"
-    "../heatshrink"
+    ${HEATSHRINK_LIB}
 )
 
 target_compile_definitions(cstone
