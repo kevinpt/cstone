@@ -13,7 +13,7 @@
 #include "cstone/prop_id.h"
 #include "cstone/prop_db.h"
 #include "cstone/prop_serialize.h"
-#include "blocking_io.h"
+#include "cstone/blocking_io.h"
 #include "cstone/term_color.h"
 
 

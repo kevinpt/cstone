@@ -6,7 +6,7 @@
 #include "semphr.h"
 
 #include "cstone/console_history.h"
-#include "console.h"
+#include "cstone/console.h"
 
 
 #include "cstone/BipBuf.hpp"

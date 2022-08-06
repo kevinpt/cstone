@@ -8,7 +8,7 @@
 
 #include "cstone/prop_id.h"
 #include "cstone/prop_flags.h"
-#include "blocking_io.h"
+#include "cstone/blocking_io.h"
 
 
 #ifndef COUNT_OF

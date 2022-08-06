@@ -2,6 +2,9 @@ set(CSTONE_SOURCE
     src/debug.c
     src/led_blink.c
     src/isr_queue.c
+    src/console.c
+    src/console_shell.c
+    src/blocking_io.c
     src/console_history.cpp
     src/prop_id.c
     src/prop_db.c
