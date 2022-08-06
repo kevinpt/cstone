@@ -21,6 +21,7 @@ target_include_directories(cstone
     "../../${FREERTOS_ROOT}/include"
     "../../${FREERTOS_PORT_INCLUDE}"
     "../../${FREERTOS_CFG_INCLUDE}"
+    "../heatshrink"
 )
 
 target_compile_definitions(cstone
