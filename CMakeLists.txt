@@ -1,4 +1,5 @@
 set(CSTONE_SOURCE
+    src/tasks_core.c
     src/debug.c
     src/led_blink.c
     src/isr_queue.c
@@ -10,6 +11,7 @@ set(CSTONE_SOURCE
     src/prop_db.c
     src/prop_serialize.c
     src/prop_flags.c
+    src/storage.c
     src/log_db.c
     src/log_index.c
     src/log_info.c
@@ -17,6 +19,7 @@ set(CSTONE_SOURCE
     src/log_props.c
     src/log_ram.c
     src/umsg.c
+    src/error_log.c
     src/util/histogram.c
     src/util/bsd_string.c
     src/util/search.c

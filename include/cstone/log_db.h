@@ -1,7 +1,7 @@
 #ifndef LOG_DB_H
 #define LOG_DB_H
 
-#include "storage.h"
+#include "cstone/storage.h"
 
 
 typedef struct {
