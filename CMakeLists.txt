@@ -20,6 +20,9 @@ set(CSTONE_SOURCE
     src/log_ram.c
     src/umsg.c
     src/error_log.c
+    src/console_uart.c
+    src/platform/stm32/uart_stm32.c
+    src/platform/stm32/gpio_stm32.c
     src/util/histogram.c
     src/util/bsd_string.c
     src/util/search.c
@@ -51,6 +54,8 @@ target_include_directories(cstone
     "../../include"
     "../../${CMSIS_ROOT}/Device/ST/${DEVICE_FAMILY_UC}xx/Include"
     "../../${CMSIS_ROOT}/Core/Include"
+    "../../${HAL_ROOT}/Inc"
+    "../../include/st_micro"
     "../../${FREERTOS_ROOT}/include"
     "../../${FREERTOS_PORT_INCLUDE}"
     "../../${FREERTOS_CFG_INCLUDE}"
@@ -62,4 +67,8 @@ target_compile_definitions(cstone
     USE_FREERTOS
     ${DEVICE_FAMILY_UC}
     ${DEVICE_MODEL_UC}xx
+    USE_HAL_DRIVER
+    USE_FULL_LL_DRIVER
 )
+
+
