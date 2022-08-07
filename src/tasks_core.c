@@ -5,7 +5,7 @@
 #include "FreeRTOS.h"
 #include "timers.h"
 #include "semphr.h"
-#include "rtos.h"
+#include "cstone/rtos.h"
 
 #include "cstone/prop_id.h"
 #include "cstone/prop_db.h"

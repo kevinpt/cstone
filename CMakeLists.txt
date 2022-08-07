@@ -21,8 +21,13 @@ set(CSTONE_SOURCE
     src/umsg.c
     src/error_log.c
     src/console_uart.c
+    src/rtos.c
+    src/timing.c
+    src/cmds_core.c
     src/platform/stm32/uart_stm32.c
     src/platform/stm32/gpio_stm32.c
+    src/platform/stm32/target_stm32.c
+    src/platform/stm32/rtos_stm32.c
     src/util/histogram.c
     src/util/bsd_string.c
     src/util/search.c
