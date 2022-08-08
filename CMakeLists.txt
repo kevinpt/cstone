@@ -1,4 +1,4 @@
-set(CSTONE_SOURCE
+set(CSTONE_SOURCE_COMMON
     src/tasks_core.c
     src/debug.c
     src/led_blink.c
@@ -24,10 +24,6 @@ set(CSTONE_SOURCE
     src/rtos.c
     src/timing.c
     src/cmds_core.c
-    src/platform/stm32/uart_stm32.c
-    src/platform/stm32/gpio_stm32.c
-    src/platform/stm32/target_stm32.c
-    src/platform/stm32/rtos_stm32.c
     src/util/histogram.c
     src/util/bsd_string.c
     src/util/search.c
@@ -43,6 +39,20 @@ set(CSTONE_SOURCE
     src/util/glob.c
 )
 
+set(CSTONE_SOURCE_STM32
+    src/platform/stm32/uart_stm32.c
+    src/platform/stm32/gpio_stm32.c
+    src/platform/stm32/target_stm32.c
+    src/platform/stm32/rtos_stm32.c
+)
+
+
+set(CSTONE_SOURCE
+  ${CSTONE_SOURCE_COMMON}
+  $<$<BOOL:${PLATFORM_STM32}>:${CSTONE_SOURCE_STM32}>
+)
+
+
 #set_source_files_properties(${XLIB_SOURCE}
 #  PROPERTIES
 #    COMPILE_FLAGS "-Wno-implicit-fallthrough -Wno-missing-prototypes -Wno-redundant-decls"
@@ -51,20 +61,22 @@ set(CSTONE_SOURCE
 
 add_library(cstone STATIC ${CSTONE_SOURCE})
 
+
 target_include_directories(cstone
   PUBLIC
     "include"
   PRIVATE
     "include/util"
-    "../../include"
-    "../../${CMSIS_ROOT}/Device/ST/${DEVICE_FAMILY_UC}xx/Include"
-    "../../${CMSIS_ROOT}/Core/Include"
-    "../../${HAL_ROOT}/Inc"
-    "../../include/st_micro"
-    "../../${FREERTOS_ROOT}/include"
-    "../../${FREERTOS_PORT_INCLUDE}"
-    "../../${FREERTOS_CFG_INCLUDE}"
-    ${HEATSHRINK_LIB}
+    "${CMAKE_SOURCE_DIR}/include"
+    "${CMAKE_SOURCE_DIR}/include/lib_cfg"
+    "${CMAKE_SOURCE_DIR}/include/st_micro"
+    "${CMSIS_ROOT}/Device/ST/${DEVICE_FAMILY_UC}xx/Include"
+    "${CMSIS_ROOT}/Core/Include"
+    "${HAL_ROOT}/Inc"
+    "${FREERTOS_ROOT}/include"
+    "${FREERTOS_PORT_INCLUDE}"
+#    "${FREERTOS_CFG_INCLUDE}"
+    ${HEATSHRINK_ROOT}
 )
 
 target_compile_definitions(cstone
