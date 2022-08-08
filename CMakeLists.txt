@@ -7,6 +7,8 @@ set(CSTONE_SOURCE_COMMON
     src/console_shell.c
     src/blocking_io.c
     src/console_history.cpp
+    src/console_uart.c
+    src/console_usb.c
     src/prop_id.c
     src/prop_db.c
     src/prop_serialize.c
@@ -20,7 +22,6 @@ set(CSTONE_SOURCE_COMMON
     src/log_ram.c
     src/umsg.c
     src/error_log.c
-    src/console_uart.c
     src/rtos.c
     src/timing.c
     src/cmds_core.c
@@ -44,6 +45,9 @@ set(CSTONE_SOURCE_STM32
     src/platform/stm32/gpio_stm32.c
     src/platform/stm32/target_stm32.c
     src/platform/stm32/rtos_stm32.c
+    src/platform/stm32/cmds_stm32.c
+    src/platform/stm32/log_stm32.c
+    src/platform/stm32/faults.c
 )
 
 
