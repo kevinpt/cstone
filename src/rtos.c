@@ -10,7 +10,7 @@
 #  include <unistd.h> // For sbrk()
 #  include "stm32f4xx_hal.h"
 #else
-#  include "timing.h"
+#  include "cstone/timing.h"
 #endif
 
 #include "FreeRTOS.h"
