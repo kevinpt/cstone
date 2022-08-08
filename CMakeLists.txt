@@ -9,6 +9,7 @@ set(CSTONE_SOURCE_COMMON
     src/console_history.cpp
     src/console_uart.c
     src/console_usb.c
+    src/console_stdio.c
     src/prop_id.c
     src/prop_db.c
     src/prop_serialize.c
@@ -50,10 +51,15 @@ set(CSTONE_SOURCE_STM32
     src/platform/stm32/faults.c
 )
 
+set(CSTONE_SOURCE_POSIX
+    src/platform/posix/target_posix.c
+)
+
 
 set(CSTONE_SOURCE
   ${CSTONE_SOURCE_COMMON}
   $<$<BOOL:${PLATFORM_STM32}>:${CSTONE_SOURCE_STM32}>
+  $<$<BOOL:${PLATFORM_HOSTED}>:${CSTONE_SOURCE_POSIX}>
 )
 
 
