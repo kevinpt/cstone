@@ -96,7 +96,15 @@ static inline int range_cat_ufixed(AppendRange *rng, unsigned value, unsigned sc
                                    unsigned places) {
   return range_cat_ufixed_padded(rng, value, scale, places, 0);
 }
-int range_cat_fixed(AppendRange *rng, int value, unsigned scale, unsigned places);
+
+int range_cat_fixed_padded(AppendRange *rng, long value, unsigned fp_scale, int frac_places,
+                            signed pad_digits);
+
+static inline int range_cat_fixed(AppendRange *rng, long value, unsigned fp_scale,
+                                   int frac_places) {
+  return range_cat_fixed_padded(rng, value, fp_scale, frac_places, 0);
+}
+
 
 int range_pad_right(StringRange *rng, char pad);
 

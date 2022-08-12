@@ -28,6 +28,7 @@
 #include "cstone/target.h"
 #include "cstone/timing.h"
 #include "cstone/tasks_core.h"
+#include "cstone/blocking_io.h"
 
 #include "util/getopt_r.h"
 #include "util/string_ops.h"
@@ -338,12 +339,12 @@ static int32_t cmd_free(uint8_t argc, char *argv[], void *eval_ctx) {
     size_t heap_min_free = heap_os_min_free();
 
     printf("\tTotal:   %3" PRIuz " KB\n", heap_size / 1024);
-    printf("\tUsed:    %3" PRIuz " KB\n", (heap_size - heap_free) / 1024);
+    printf("\tUsed:    %3" PRIuz " KB", (heap_size - heap_free) / 1024);
+    printf("\t\t\tObjects: %" PRIuz "\n",  heap_os_allocated_objs());
     printf("\tFree:    %3" PRIuz " KB (Min %" PRIuz " KB)\n", heap_free / 1024, heap_min_free / 1024);
-    printf("\tObjects: %3" PRIuz "\n",  heap_os_allocated_objs());
 
 
-    puts("\nC heap:");
+    bputs("\nC heap:");
 
     heap_size = heap_c_lib_size();
     heap_free = heap_c_lib_free();
@@ -352,7 +353,7 @@ static int32_t cmd_free(uint8_t argc, char *argv[], void *eval_ctx) {
     printf("\tUsed:    %3" PRIuz " KB\n", (heap_size - heap_free) / 1024);
     printf("\tFree:    %3" PRIuz " KB\n", heap_free / 1024);
 
-    puts("\nMemory pools:");
+    bputs("\n--= Memory pools =--");
     mp_summary(&g_pool_set);
 
   } else {  // Plot mem pool histogram

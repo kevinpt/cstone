@@ -94,8 +94,13 @@ static inline short iabs_s(short n) {
 #endif
 
 
-unsigned ufixed_to_uint(unsigned fp_value, unsigned scale);
-int fixed_to_int(int fp_value, unsigned scale);
+unsigned ufixed_to_uint(unsigned fp_value, unsigned fp_scale);
+int fixed_to_int(int fp_value, unsigned fp_scale);
+
+int to_fixed_base10_parts(long value, unsigned long fp_scale, long *integer, long *frac);
+int fixed_base10_adjust(long *integer, long *frac, int frac_digits, int frac_places);
+long to_fixed_base10(long value, unsigned long fp_scale, int frac_places, int *b10_exp);
+long to_fixed_si(long value, int value_exp, unsigned fp_scale, char *si_prefix, bool pow2);
 
 #ifdef __cplusplus
 }

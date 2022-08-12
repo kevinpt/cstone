@@ -3,7 +3,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <termios.h>
+// Newlib doesn't provide full <sys/termios.h> so only support this on a real *nix
+#ifdef __unix__
+#  include <termios.h>
+#endif
 
 #include "FreeRTOS.h"
 #include "semphr.h"
@@ -12,14 +15,17 @@
 #include "cstone/console_stdio.h"
 
 
+#ifdef __unix__
 static struct termios s_saved_termios = {0};
 
 static void restore_terminal(void) {
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &s_saved_termios);
 }
+#endif
 
 
 void configure_posix_terminal(void) {
+#ifdef __unix__
 // Set stdin to raw mode
 // https://viewsourcecode.org/snaptoken/kilo/02.enteringRawMode.html
 
@@ -31,8 +37,8 @@ void configure_posix_terminal(void) {
   raw.c_iflag &= ~(IXON); // Flow control off
 //  raw.c_oflag &= ~(OPOST); // CR/LF translation off
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+#endif
 }
-
 
 
 // Callback for Console object

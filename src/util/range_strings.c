@@ -659,32 +659,99 @@ int range_cat_ufixed_padded(AppendRange *rng, unsigned value, unsigned scale, un
 
 
 /*
-Concatenate a signed fixed point integer to a range
+Concatenate an unsigned fixed point integer to a range
 
 Args:
-  rng:      Target string for value
-  value:    Fixed point value to format
-  scale:    Scale factor for value
-  places:   Number of fractional decimal places in output
+  rng:          Target string for value
+  value:        Fixed-point value to format
+  fp_scale:     Fixed-point scale factor for value
+  frac_places:  Number of fractional decimal places in output, -1 for max precision
+  pad_digits:   Pad with spaces: 0 = no padding, < 0 = left justify, > 0 = right justify
 
 Returns:
   Number of bytes written if positive
   Number of bytes needed if negative
 */
-int range_cat_fixed(AppendRange *rng, int value, unsigned scale, unsigned places) {
-  int s_chars = 0;
+int range_cat_fixed_padded(AppendRange *rng, long value, unsigned fp_scale, int frac_places,
+                            signed pad_digits) {
 
-  // Convert to positive and add '-' if value was negative
-  if(value < 0) {
-    value = -value; // NOTE: Does not work with INT_MIN
-    s_chars = range_cat_char(rng, '-');
+  long integer;
+  long frac;
+
+  int frac_digits = to_fixed_base10_parts(value, fp_scale, &integer, &frac);
+  if(frac_places >= 0)  // Rescale
+    frac_digits = fixed_base10_adjust(&integer, &frac, frac_digits, frac_places);
+
+  if(frac < 0) frac = -frac;
+
+  // Convert exponent to scaling
+  int scale_b10 = 1;
+  for(int i = 0; i < frac_digits; i++) {
+    scale_b10 *= 10;
   }
 
-  int n_chars = range_cat_ufixed_padded(rng, (unsigned)value, scale, places, 0);
-  if(n_chars < 0 && s_chars > 0)
-    s_chars = -s_chars;
+  int status = 0;
+  int len;
 
-  return s_chars + n_chars;
+  // Apply justification padding
+  if(frac_digits > 0) {
+    status = 0;
+    if(pad_digits > 0) { // Handle right justification here (Padding on left side)
+      // Get length of formatted string
+      len = snprintf(NULL, 0, "%ld.%0*ld", integer, frac_digits, frac);
+
+      if(pad_digits > len) {
+        pad_digits -= len;
+
+        for(int i = 0; i < pad_digits; i++) { // Add padding
+          if(range_cat_char(rng, ' ') < 0) {
+            status = -pad_digits;
+            break;
+          }
+          status++;
+        }
+      }
+    }
+
+    if(status >= 0) { // Left padding was ok
+      len = range_cat_fmt(rng, "%ld.%0*ld", integer, frac_digits, frac);
+      if(len >= 0)
+        status += len;
+      else // Won't fit
+        status = -status + len;
+    }
+
+  } else {  // No fraction part
+    // Handle right justification here (Padding on left side)
+    int justify = (pad_digits < 0) ? 0 : pad_digits;
+    status = range_cat_fmt(rng, "%*ld", justify, integer);
+  }
+
+  if(pad_digits < 0) {
+    pad_digits = -pad_digits;
+    if(status >= 0 && pad_digits > status) {  // Left justify by padding on right
+      len = 0;
+      for(int i = status - pad_digits; i < 0; i++) {
+        if(range_cat_char(rng, ' ') < 0) {
+          len = status - pad_digits;
+          break;
+        }
+
+        len++;
+      }
+
+      if(len >= 0)
+        status += len;
+      else  // Won't fit
+        status = -status + len;
+
+    } else { // Number didn't fit
+      if(pad_digits < status) // Both are negative
+        status = pad_digits;
+    }
+  }
+
+  return status;
 }
 
 
