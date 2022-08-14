@@ -30,14 +30,8 @@ DEALINGS IN THE SOFTWARE.
 #define USE_MP_POINTER_CHECK
 
 #ifdef USE_MP_COLLECT_STATS
+#  include "stats.h"
 #  include "histogram.h"
-
-typedef int32_t MeanType;
-
-typedef struct {
-  size_t count;
-  MeanType mean;
-} OnlineMean;
 #endif
 
 
@@ -53,7 +47,7 @@ typedef struct mpPool {
 #ifdef USE_MP_COLLECT_STATS
   size_t      free_elems;
   size_t      min_free_elems;
-  OnlineMean  req_size;
+  OnlineStats req_size;
 #endif
   uint8_t     flags;
   uint8_t     elements[];

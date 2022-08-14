@@ -39,6 +39,7 @@ set(CSTONE_SOURCE_COMMON
     src/util/intmath.c
     src/util/string_ops.c
     src/util/glob.c
+    src/util/stats.c
 )
 
 set(CSTONE_SOURCE_STM32

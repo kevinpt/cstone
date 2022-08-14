@@ -93,6 +93,7 @@ static inline short iabs_s(short n) {
 
 #endif
 
+unsigned long isqrt_fixed(unsigned long fp_value, unsigned fp_exp);
 
 unsigned ufixed_to_uint(unsigned fp_value, unsigned fp_scale);
 int fixed_to_int(int fp_value, unsigned fp_scale);

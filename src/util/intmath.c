@@ -301,7 +301,7 @@ long to_fixed_base10(long value, unsigned long fp_scale, int frac_places, int *b
     scale_b10 *= 10;
   }
 
-  *b10_exp = frac_digits;
+  *b10_exp = -frac_digits;
   return integer * scale_b10 + frac;
 }
 
@@ -309,6 +309,8 @@ long to_fixed_base10(long value, unsigned long fp_scale, int frac_places, int *b
 
 /*
 Convert an integer to fixed point reduced by the appropriate SI power
+
+The pow2 scaling option is only available when value exponent is 0.
 
 Args:
   value:        Integer value
@@ -359,5 +361,66 @@ long to_fixed_si(long value, int value_exp, unsigned fp_scale, char *si_prefix, 
   // Convert to fixed point with rounding to +/-infinity
   value = ((long long)value * fp_scale + min_val/2) / min_val;
   return negative ? -value : value;
+}
+
+
+/*
+Calculate a fixed point squart root from a fixed-point value
+
+The precision is controlled by the size of the fp_exp scale factor.
+fp_value and the result are in base-2 fixed-point format.
+
+Args:
+  fp_value:     Fixed-point number to take root of
+  fp_exp:       Base-2 exponent for fp_value. Must be even
+
+Returns:
+  Square root of fp_value with the same fixed-point scaling
+*/
+unsigned long isqrt_fixed(unsigned long fp_value, unsigned fp_exp) {
+  /* Reference:
+    Adapted from Christophe Meessen's fixed point sqrt() implementation:
+    https://github.com/chmike/fpsqrt
+    https://groups.google.com/forum/?hl=fr%05aacf5997b615c37&fromgroups#!topic/comp.lang.c/IpwKbw0MAxw/discussion
+  */
+//  const unsigned short total_bits   = 8 * sizeof fp_value;
+#define TOTAL_BITS  (8 * sizeof fp_value)
+  const unsigned short integer_bits = TOTAL_BITS - fp_exp;
+
+  const unsigned short adj_bits = integer_bits / 2; // Number of bits shifted for final adjustment
+  const unsigned short aux_bits = adj_bits >= 2 ? 2 : adj_bits; // Additional aux bits
+
+  if(integer_bits & 0x01) // Integer bits must be even
+    return 0;
+
+  unsigned long t, q, b, r;
+  r = fp_value;
+  q = 0;
+
+  /*
+    This algorithm computes sqrt(x) with an offset factor 2^(I+F):
+      q = sqrt(X*2^F * 2^(I+F)) where x = X*2^F
+
+    We want the fractional part of the offset in the result:
+        = sqrt(x) * 2^F * sqrt(2^I)  =  sqrt(x) * 2^F * 2^(I/2)
+
+    The remaining offset is shifted off for the final correction.
+    Because these bits are being removed we can terminate the loop early
+    to reduce the iterations.
+  */
+
+  unsigned long end_b = 1UL << (adj_bits - aux_bits);
+  for(b = 1UL << (TOTAL_BITS-2); b > end_b; b >>= 1) {
+    t = q + b;
+    if(r >= t) {
+      r -= t;
+      q = t + b; // Equivalent to q += 2*b
+    }
+    r <<= 1;
+  }
+
+  // Remove remaining offset factor and round up
+  q = (q >> adj_bits) + (unsigned long)(r > q);
+  return q;
 }
 

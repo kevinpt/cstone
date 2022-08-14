@@ -76,27 +76,6 @@ static inline bool is_power_of_2(size_t n) {
 
 
 
-// ******************** Allocation stats ********************
-
-#ifdef USE_MP_COLLECT_STATS
-static void online_mean_reset(OnlineMean *om) {
-  om->count = 0;
-  om->mean = 0;
-}
-
-static void online_mean_add_sample(OnlineMean *om, MeanType sample) {
-  om->count++;
-
-  if(om->count == 1) {
-    om->mean = sample;
-
-  } else {
-    om->mean = om->mean + (sample - om->mean) / (MeanType)om->count;
-  }
-}
-#endif
-
-
 // ******************** Internal link operations ********************
 
 // Get next pool
@@ -265,7 +244,7 @@ static inline void mp__init_pool(mpPool *pool, size_t elements, size_t element_s
 #ifdef USE_MP_COLLECT_STATS
   pool->free_elems = elements;
   pool->min_free_elems = elements;
-  online_mean_reset(&pool->req_size);
+  stats_init(&pool->req_size, 8);
 #endif
   pool->flags = 0;
 
@@ -448,7 +427,7 @@ void *mp_alloc(mpPoolSet *pool_set, size_t size, size_t *alloc_size) {
 
 #ifdef USE_MP_COLLECT_STATS
   if(alloc)
-    online_mean_add_sample(&cur->req_size, size);
+    stats_add_sample(&cur->req_size, size);
 #endif
 
   return (void *)alloc;
@@ -493,7 +472,7 @@ void *mp_alloc_aligned(mpPoolSet *pool_set, size_t size, size_t *alloc_size, siz
 
 #ifdef USE_MP_COLLECT_STATS
   if(alloc)
-    online_mean_add_sample(&cur->req_size, size);
+    stats_add_sample(&cur->req_size, size);
 #endif
 
   return (void *)alloc;
@@ -540,7 +519,7 @@ void *mp_alloc_best_effort(mpPoolSet *pool_set, size_t size, size_t *alloc_size)
 
 #ifdef USE_MP_COLLECT_STATS
   if(alloc_pool)
-    online_mean_add_sample(&alloc_pool->req_size, alloc_pool->element_size);
+    stats_add_sample(&alloc_pool->req_size, alloc_pool->element_size);
 #endif
 
   return (void *)alloc;
@@ -593,7 +572,7 @@ void *mp_alloc_with_ref(mpPoolSet *pool_set, size_t size, size_t *alloc_size) {
     alloc += sizeof(mpRefCount);  // Return pointer following the reference count
 
 #ifdef USE_MP_COLLECT_STATS
-    online_mean_add_sample(&cur->req_size, size);
+    stats_add_sample(&cur->req_size, size);
 #endif
   }
 
@@ -914,7 +893,8 @@ bool mp_pool_in_use(mpPool *pool) {
 #define SIF_ROUND_TO_CEIL   0x04  // Rounding mode for SIF_SIMPLIFY
 #define SIF_TIGHT_UNITS     0x08  // No space between value and prefix
 #define SIF_NO_ALIGN_UNITS  0x10  // Skip extra space when there is no prefix
-#define SIF_GREEK_MICRO     0x20  // Use UTF-8 µ for micro prefix
+#define SIF_GREEK_MICRO     0x20  // Use UTF-8 µ for micro- prefix
+#define SIF_UPPER_CASE_K    0x40  // Use Upper case for kilo- prefix
 
 /*
 Format a number into a string with SI prefix for exponent
@@ -965,8 +945,11 @@ static char *to_si_value(long value, int value_exp, char *buf, size_t buf_size, 
   if(si_prefix != '\0') {
     if(si_prefix == 'u' && (options & SIF_GREEK_MICRO))
       range_cat_str(&rng, u8"\u00b5"); // µ
-    else
-      range_cat_char(&rng, toupper(si_prefix));
+    else {
+      if(si_prefix == 'k' && (options & SIF_UPPER_CASE_K))
+        si_prefix = 'K';
+      range_cat_char(&rng, si_prefix);
+    }
   } else if(!(options & SIF_NO_ALIGN_UNITS)) {
     range_cat_char(&rng, ' ');  // Add space in place of prefix so unit symbols stay aligned
   }
@@ -1006,7 +989,7 @@ void mp_summary(mpPoolSet *pool_set) {
       puts("");
 
     char buf[8];
-#define TO_SI(v)  to_si_value((v), 0, buf, sizeof buf, 1, SIF_SIMPLIFY | SIF_POW2)
+#define TO_SI(v)  to_si_value((v), 0, buf, sizeof buf, 1, SIF_SIMPLIFY | SIF_POW2 | SIF_UPPER_CASE_K)
 
     size_t total_size = mp_total_elements(cur) * cur->element_size;
     printf("\tTotal:  %6sB\n", TO_SI(total_size));
@@ -1019,7 +1002,20 @@ void mp_summary(mpPoolSet *pool_set) {
             mp_total_elements(cur) - cur->free_elems, mp_total_elements(cur));
     printf("\tFree:   %6sB", TO_SI(free_size));
     printf(" (Min %sB)\n", TO_SI(cur->min_free_elems * cur->element_size));
-    printf("\tRequests:%3" PRIuz "    (Avg %sB)", cur->req_size.count, TO_SI(cur->req_size.mean));
+
+    // Format average request size
+    long mean = stats_mean(&cur->req_size);
+    int b10_exp;
+    mean = to_fixed_base10(mean, stats_fp_scale(&cur->req_size), -1, &b10_exp);
+    to_si_value(mean, b10_exp, buf, sizeof buf, 1, SIF_SIMPLIFY | SIF_NO_ALIGN_UNITS | SIF_UPPER_CASE_K);
+
+    printf("\tRequests:%3" PRIuz "    (Avg %sB", cur->req_size.count, buf);
+
+    // Format standard deviation
+    long sdev = stats_std_dev(&cur->req_size);
+    sdev = to_fixed_base10(sdev, stats_fp_scale(&cur->req_size), -1, &b10_exp);
+    to_si_value(sdev, b10_exp, buf, sizeof buf, 1, SIF_SIMPLIFY | SIF_NO_ALIGN_UNITS | SIF_UPPER_CASE_K);
+    printf(", SDev. %sB)", buf);
 
 #else
     size_t free_size = flist_count * cur->element_size;
