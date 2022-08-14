@@ -455,7 +455,7 @@ static inline void shell__show_help(ConsoleShell *shell) {
 
 #ifdef USE_SORTED_COMMAND_HELP
   // Sort the command definitions
-  const ConsoleCommandDef **sorted = malloc(shell->cmd_suite->total_cmds * sizeof(ConsoleCommandDef *));
+  const ConsoleCommandDef **sorted = cs_malloc(shell->cmd_suite->total_cmds * sizeof(ConsoleCommandDef *));
   if(sorted) {
     const ConsoleCommandDef **pos = sorted;
     // Populate the sorted array
@@ -474,7 +474,7 @@ static inline void shell__show_help(ConsoleShell *shell) {
       print__cmd_help(sorted[i]);
     }
 
-    free(sorted);
+    cs_free(sorted);
     return;
   }
   // Malloc failed. Fallback to printing unsorted list.

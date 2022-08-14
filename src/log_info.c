@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "cstone/platform.h"
 #include "cstone/debug.h"
 
 #include "cstone/log_db.h"
@@ -35,7 +36,7 @@ void logdb_dump_record(LogDB *db) {
     return;
 
   //printf("## Get block: %u\n", sizeof(*block) + header.data_len);
-  block = (LogDBBlock *)malloc(sizeof(*block) + header.data_len);
+  block = cs_malloc(sizeof(*block) + header.data_len);
   if(!block)
     return;
 
@@ -43,7 +44,7 @@ void logdb_dump_record(LogDB *db) {
   if(logdb_read_last(db, block) && block->kind == BLOCK_KIND_PROP_DB) {
 
     // Create temporary prop DB to hold decoded block data
-    PropDB *temp_db = (PropDB *)malloc(sizeof(PropDB));
+    PropDB *temp_db = cs_malloc(sizeof(PropDB));
     if(temp_db) {
       // Decode into prop DB
       prop_db_init(temp_db, 32, 0, &g_pool_set);
@@ -57,15 +58,15 @@ void logdb_dump_record(LogDB *db) {
         DPRINT("Decode compressed %u --> %" PRIuz, block->data_len, data_len);
         if(data_len > 0) {
           prop_db_deserialize(temp_db, decompressed, data_len);
-          free(decompressed);
+          cs_free(decompressed);
         }
       }
 
       prop_db_dump(temp_db);
       prop_db_free(temp_db);
-      free(temp_db);
+      cs_free(temp_db);
     }
   }
-  free(block);
+  cs_free(block);
 }
 

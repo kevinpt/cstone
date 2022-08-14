@@ -470,7 +470,7 @@ static int32_t cmd_property(uint8_t argc, char *argv[], void *eval_ctx) {
     if(keys_len > 0) {
       prop_db_sort_keys(&g_prop_db, keys, keys_len);
       prop_db_dump_keys(&g_prop_db, keys, keys_len);
-      free(keys);
+      cs_free(keys);
     }
 #endif
     return 0;

@@ -6,6 +6,7 @@
 #include "heatshrink_encoder.h"
 #include "heatshrink_decoder.h"
 
+#include "cstone/platform.h"
 #include "util/unaligned_access.h"
 #include "cstone/log_db.h"
 #include "cstone/log_compress.h"
@@ -26,7 +27,7 @@ bool logdb_compress_block(LogDBBlock *block, LogDBBlock **compressed_block) {
   }
 
   // Compress the raw data
-  LogDBBlock *new_block = malloc(sizeof(LogDBBlock) + sizeof(uint16_t) + block->data_len);
+  LogDBBlock *new_block = cs_malloc(sizeof(LogDBBlock) + sizeof(uint16_t) + block->data_len);
 
   if(!new_block) {
     *compressed_block = NULL;
@@ -81,7 +82,7 @@ cleanup:
   heatshrink_encoder_free(hse);
 
   if(!rval)
-    free(new_block);
+    cs_free(new_block);
 
   *compressed_block = rval ? new_block : NULL;
   return rval;
@@ -107,13 +108,13 @@ size_t logdb_decompress_block(LogDBBlock *compressed_block, uint8_t **decompress
 
   uint16_t decompressed_len = get_unaligned_le((uint16_t *)compressed_block->data);
 
-  *decompressed = malloc(decompressed_len);
+  *decompressed = cs_malloc(decompressed_len);
   if(!*decompressed)
     return 0;
 
   heatshrink_decoder *hsd = heatshrink_decoder_alloc(64, COMPRESS_WINDOW_SIZE,COMPRESS_LOOKAHEAD_SIZE);
   if(!hsd) {
-    free(*decompressed);
+    cs_free(*decompressed);
     *decompressed = NULL;
     return 0;
   }
@@ -151,7 +152,7 @@ size_t logdb_decompress_block(LogDBBlock *compressed_block, uint8_t **decompress
 
   // Validate decompressed data length
   if((size_t)decompressed_len != (size_t)(out_pos - *decompressed)) {
-    free(*decompressed);
+    cs_free(*decompressed);
     *decompressed = NULL;
     return 0;
   }

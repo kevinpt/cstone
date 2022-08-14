@@ -53,13 +53,18 @@
 #endif
 
 
-#if defined PLATFORM_NEWLIB // Newlib on ARM32
-#  define USE_UART_CONSOLE  1
-#endif
 
 
 #if (defined __STDC_VERSION__ && __STDC_VERSION__ >= 201112L && !defined __STDC_NO_ATOMICS__)
 #  define PLATFORM_HAS_ATOMICS
 #endif
+
+
+// Heap allocation wrappers for cstone library
+#define cs_malloc(s)      malloc(s)
+#define cs_calloc(n, s)   calloc((n), (s))
+#define cs_realloc(p, s)  realloc((p), (s))
+#define cs_free(p)        free(p)
+
 
 #endif // PLATFORM_H

@@ -8,6 +8,7 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 
+#include "cstone/platform.h"
 #include "util/list_ops.h"
 
 #include "cstone/console.h"
@@ -284,19 +285,19 @@ Console *console_alloc(ConsoleConfigBasic *cfg) {
   IsrQueue *rx_queue = NULL;
   ConsoleConfigFull full_cfg;
 
-  line_buf = (char *)malloc(cfg->line_buf_size * sizeof(char));
+  line_buf = (char *)cs_malloc(cfg->line_buf_size * sizeof(char));
   if(!line_buf)
     return NULL;
 
 #ifdef USE_CONSOLE_HISTORY
   if(cfg->hist_buf_size > 0) {
-    hist_buf = (char *)malloc(cfg->hist_buf_size * sizeof(char));
+    hist_buf = (char *)cs_malloc(cfg->hist_buf_size * sizeof(char));
     if(!hist_buf)
       goto cleanup;
   }
 #endif
 
-  con = (Console *)malloc(sizeof(Console));
+  con = (Console *)cs_malloc(sizeof(Console));
 
   tx_queue = isr_queue_alloc(cfg->tx_queue_size, /*overwrite*/false);
   rx_queue = isr_queue_alloc(cfg->rx_queue_size, /*overwrite*/false);
@@ -326,13 +327,13 @@ Console *console_alloc(ConsoleConfigBasic *cfg) {
   return con;
 
 cleanup:
-  if(line_buf)  free(line_buf);
+  if(line_buf)  cs_free(line_buf);
 #ifdef USE_CONSOLE_HISTORY
-  if(hist_buf)  free(hist_buf);
+  if(hist_buf)  cs_free(hist_buf);
 #endif
-  if(con)       free(con);
-  if(tx_queue)  free(tx_queue);
-  if(rx_queue)  free(rx_queue);
+  if(con)       cs_free(con);
+  if(tx_queue)  cs_free(tx_queue);
+  if(rx_queue)  cs_free(rx_queue);
   return NULL;
 }
 

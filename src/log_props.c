@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "cstone/platform.h"
 #include "cstone/prop_id.h"
 #include "cstone/prop_db.h"
 #include "cstone/log_db.h"
@@ -28,7 +29,7 @@ bool save_props_to_log(PropDB *db, LogDB *log_db, bool compress) {
       DPRINT("Writing compressed block  %u --> %u", block->data_len, compressed_block->data_len);
 
       logdb_write_block(log_db, compressed_block);  // Save compressed
-      free(compressed_block);
+      cs_free(compressed_block);
 
     } else
 #endif
@@ -36,7 +37,7 @@ bool save_props_to_log(PropDB *db, LogDB *log_db, bool compress) {
       logdb_write_block(log_db, block); // Save uncompressed
     }
 
-    free(block);
+    cs_free(block);
     return true;
   }
 
@@ -55,7 +56,7 @@ unsigned restore_props_from_log(PropDB *db, LogDB *log_db) {
   if(header.data_len == 0) // No valid blocks in log FS
     return 0;
 
-  block = (LogDBBlock *)malloc(sizeof(*block) + header.data_len);
+  block = (LogDBBlock *)cs_malloc(sizeof(*block) + header.data_len);
   if(!block)
     return 0;
 
@@ -77,7 +78,7 @@ unsigned restore_props_from_log(PropDB *db, LogDB *log_db) {
         DPRINT("Decode compressed %u --> %" PRIuz, block->data_len, data_len);
         if(data_len > 0) {
           count = prop_db_deserialize(db, decompressed, data_len);
-          free(decompressed);
+          cs_free(decompressed);
         }
       }
       break;
@@ -87,7 +88,7 @@ unsigned restore_props_from_log(PropDB *db, LogDB *log_db) {
     }
   }
 
-  free(block);
+  cs_free(block);
 
   return count;
 }

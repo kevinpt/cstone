@@ -409,7 +409,7 @@ bool prop_db_serialize(PropDB *db, LogDBBlock **block) {
       data_len += prop_encoded_bytes((uintptr_t)key.data, entry);
     }
 
-    LogDBBlock *new_block = malloc(sizeof(LogDBBlock) + data_len);
+    LogDBBlock *new_block = cs_malloc(sizeof(LogDBBlock) + data_len);
     if(!new_block) {
       *block = NULL;
       UNLOCK();
@@ -470,7 +470,7 @@ size_t prop_db_all_keys(PropDB *db, uint32_t **keys) {
     size_t num_keys = dh_num_items(&db->hash);
 
     if(num_keys > 0)
-      key_vec = malloc(num_keys * sizeof(uint32_t));
+      key_vec = cs_malloc(num_keys * sizeof(uint32_t));
 
     if(!key_vec) {
       *keys = NULL;

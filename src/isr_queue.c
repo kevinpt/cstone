@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "cstone/platform.h"
 #include "cstone/isr_queue.h"
 
 
@@ -34,7 +35,7 @@ IsrQueue *isr_queue_alloc(size_t buf_size, bool overwrite) {
   // for the QueueDatum array following it.
 #define ROUND_UP_ALIGN(n, T)  ((n) + _Alignof(T)-1 - ((n) + _Alignof(T)-1) % _Alignof(T))
   const size_t padded_q_size = ROUND_UP_ALIGN(sizeof *q, QueueDatum);
-  q = malloc(padded_q_size + (buf_size * sizeof *buf));
+  q = cs_malloc(padded_q_size + (buf_size * sizeof *buf));
 
   if(q) {
     buf = (QueueDatum *)((uint8_t *)q + padded_q_size);
