@@ -22,10 +22,10 @@
 extern void fatal_error(void);
 
 
-// Put FreeRTOS heap in CCM RAM
+// FreeRTOS heap storage
 #if configAPPLICATION_ALLOCATED_HEAP == 1
 #  ifdef PLATFORM_EMBEDDED
-__attribute__(( section(".ccmram") ))
+__attribute__(( section(FREERTOS_HEAP_SECTION) ))
 #  endif
 uint8_t ucHeap[configTOTAL_HEAP_SIZE];
 #endif

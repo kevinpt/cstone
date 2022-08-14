@@ -23,6 +23,7 @@
 // https://community.silabs.com/s/article/how-to-read-the-link-register-lr-for-an-arm-cortex-m-series-device?language=en_US
 // https://interrupt.memfault.com/blog/cortex-m-fault-debug
 
+// Storing fault record in .noinit so it will be preserved across resets
 __attribute__(( section(".noinit") ))
 SysFaultRecord g_fault_record;
 
