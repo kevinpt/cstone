@@ -63,6 +63,7 @@ typedef struct {
 #define DEF_PIN(name, port, pin, mode) \
   GPIOPin name = {0}; \
   __attribute__((constructor)) \
+  void name ## __ctor(void); \
   void name ## __ctor(void) { \
     gpio_init(&name, port, pin, mode); \
   }

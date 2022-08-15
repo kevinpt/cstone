@@ -2,7 +2,7 @@
 #include <stdbool.h>
 
 #include "cstone/platform.h"
-#include "cstone_cfg_stm32.h"
+#include "lib_cfg/cstone_cfg_stm32.h"
 
 #include "stm32f4xx_ll_tim.h"
 

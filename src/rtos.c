@@ -34,7 +34,6 @@ uint8_t ucHeap[configTOTAL_HEAP_SIZE];
 // FreeRTOS callbacks
 
 void vApplicationIdleHook(void);
-void vApplicationMallocFailedHook(void);
 void vApplicationDaemonTaskStartupHook(void);
 
 void vApplicationIdleHook(void) {

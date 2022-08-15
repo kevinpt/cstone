@@ -404,6 +404,9 @@ M(P2, SYS,      2) \
 M(P2, STORAGE,  3) \
 M(P2, CON,      4) \
 M(P2, USB,      5) \
+M(P2, SPI,      6) \
+M(P2, I2C,      7) \
+M(P2, BUTTON,   8) \
 M(P2, R127,     127) \
 \
 M(P3, INFO,     1) \
@@ -413,6 +416,7 @@ M(P3, MESSAGE,  4) \
 M(P3, PROP,     5) \
 M(P3, TARGET,   6) \
 M(P3, LIMIT,    7) \
+M(P3, BUILD,    8) \
 M(P3, R127,     127) \
 \
 M(P4, VALUE,    1) \
@@ -435,6 +439,8 @@ M(P4, ATTACH,   17) \
 M(P4, DETACH,   18) \
 M(P4, SIZE,     19) \
 M(P4, LOC,      20) \
+M(P4, PRESS,    21) \
+M(P4, RELEASE,  22) \
 M(P4, R127,     127) \
 \
 M(P1, MSK, 0xFFul) \
