@@ -679,12 +679,12 @@ static int32_t cmd_tasks(uint8_t argc, char *argv[], void *eval_ctx) {
     }
 
     task_time = ticks_to_si_time(tasks[i].ulRunTimeCounter, &unit);
-    printf("  %-10s   %c    %2lu    %4" PRIu32 "  %3lu %s\n", tasks[i].pcTaskName, state,
+    bprintf("  %-10s   %c    %2lu    %4" PRIu32 "  %3lu %s\n", tasks[i].pcTaskName, state,
             tasks[i].uxCurrentPriority, (uint32_t)(tasks[i].usStackHighWaterMark * sizeof(StackType_t)),
             task_time, unit);
   }
 
-  printf("\n  Avg. load: %" PRIu32 "%%\n", 100 - ulTaskGetIdleRunTimePercent());
+  bprintf("\n  Avg. load: %" PRIu32 "%%\n", 100 - ulTaskGetIdleRunTimePercent());
   free(tasks);
 
 #ifdef USE_LOAD_MONITOR
