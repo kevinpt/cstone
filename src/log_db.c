@@ -10,6 +10,10 @@
 #include "cstone/prop_id.h"
 #include "cstone/umsg.h"
 
+// FIXME: Make configurable
+#define crc16_update_block(crc, data, len)  crc16_update_small_block((crc), (data), (len))
+
+
 void logdb_init(LogDB *db, StorageConfig *cfg) {
   memset(db, 0, sizeof(*db));
   memcpy(&db->storage, cfg, sizeof(*cfg));

@@ -17,6 +17,10 @@
 #  define COUNT_OF(a) (sizeof(a) / sizeof(*(a)))
 #endif
 
+// FIXME: Make configurable
+#define crc16_update_block(crc, data, len)  crc16_update_small_block((crc), (data), (len))
+
+
 // ******************** Fault log ********************
 
 // https://blog.feabhas.com/2018/09/updated-developing-a-generic-hard-fault-handler-for-arm-cortex-m3-cortex-m4-using-gcc/
