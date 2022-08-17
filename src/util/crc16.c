@@ -100,6 +100,45 @@ uint16_t crc16_update_serial_block(uint16_t crc, const uint8_t *data, size_t dat
   return crc;
 }
 
+//  python3 -m pycrc --width=16 --poly=0x8005 --xor-in=0xFFFF --reflect-in=0 --reflect-out=0 --xor-out=0
+//          --algorithm table-driven --table-idx-width=4 --generate c -o crc.c
+
+static const uint16_t s_crc16_table_small[16] = {
+  0x0000, 0x8005, 0x800F, 0x000A, 0x801B, 0x001E, 0x0014, 0x8011,
+  0x8033, 0x0036, 0x003C, 0x8039, 0x0028, 0x802D, 0x8027, 0x0022
+};
+
+
+/*
+Add data block to CRC
+
+Uses small table algorithm
+
+Args:
+  crc:      Current CRC state
+  data:     Array of data to compute CRC over
+  data_len: Size of data array
+
+Returns:
+  New CRC state
+*/
+uint16_t crc16_update_small_block(uint16_t crc, const uint8_t *data, size_t data_len) {
+  const uint8_t *d8 = data;
+  uint8_t ix;
+
+  while(data_len--) {
+    ix = (crc >> 12) ^ (*d8 >> 4);
+    crc = s_crc16_table_small[ix & 0x0F] ^ (crc << 4);
+    ix = (crc >> 12) ^ (*d8++ >> 0);
+    crc = s_crc16_table_small[ix & 0x0F] ^ (crc << 4);
+  }
+
+  return crc;
+}
+
+
+//  python3 -m pycrc --width=16 --poly=0x8005 --xor-in=0xFFFF --xor-out=0 --reflect-in=0 --reflect-out=0
+//          --algorithm table-driven --generate c -o crc.c
 
 static const uint16_t s_crc16_table[256] = {
   0x0000, 0x8005, 0x800F, 0x000A, 0x801B, 0x001E, 0x0014, 0x8011,
@@ -238,7 +277,11 @@ int main(void) {
   bcrc = crc16_update_block(bcrc, (const uint8_t *)check, strlen(check));
   bcrc = crc16_finish(bcrc);
 
-  printf("\tblock=%04X\n", bcrc);
+  uint16_t smcrc = crc16_init();
+  smcrc = crc16_update_small_block(smcrc, (const uint8_t *)check, strlen(check));
+  smcrc = crc16_finish(smcrc);
+
+  printf("\tblock=%04X,  small block=%04X\n", bcrc, smcrc);
 
 //  crc16_gen_table();
 

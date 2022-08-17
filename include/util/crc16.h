@@ -35,6 +35,7 @@ uint16_t crc16_update_serial(uint16_t crc, uint8_t data);
 uint16_t crc16_update_serial_block(uint16_t crc, const uint8_t *data, size_t data_len);
 
 uint16_t crc16_update(uint16_t crc, uint8_t data);
+uint16_t crc16_update_small_block(uint16_t crc, const uint8_t *data, size_t data_len);
 uint16_t crc16_update_block(uint16_t crc, const uint8_t *data, size_t data_len);
 
 uint16_t crc16_finish(uint16_t crc);
