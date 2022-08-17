@@ -99,6 +99,9 @@ Returns:
   Variance of all data as base-2 fixed-point
 */
 SampleDatum stats_variance(OnlineStats *os) {
+  if(os->count < 1)
+    return 0;
+
   return os->m2 / (SampleDatum)os->count;
 }
 
@@ -113,6 +116,9 @@ Returns:
   Sample variance of all data as base-2 fixed-point
 */
 SampleDatum stats_sample_variance(OnlineStats *os) {
+  if(os->count < 2)
+    return 0;
+
   return os->m2 / (SampleDatum)(os->count - 1);
 }
 
@@ -127,6 +133,9 @@ Returns:
   Standard deviation of all data as base-2 fixed-point
 */
 SampleDatum stats_std_dev(OnlineStats *os) {
+  if(os->count < 2)
+    return 0;
+
   SampleDatum svar = os->m2 / (SampleDatum)(os->count - 1);
   return isqrt_fixed(svar, os->fp_exp);
 }
