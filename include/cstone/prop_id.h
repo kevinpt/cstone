@@ -271,6 +271,7 @@ internal system objects in need of an ID that should be distinct from other prop
 */
 
 // ******************** Configuration ********************
+// FIXME: Move to common cstone config header
 #define USE_PROP_ID_FIELD_NAMES
 #define USE_PROP_ID_REV_HASH
 

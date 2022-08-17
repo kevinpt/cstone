@@ -16,8 +16,11 @@
 #include "FreeRTOS.h"
 #include "timers.h"
 #include "cstone/rtos.h"
+#include "cstone/prop_id.h"
+#include "cstone/debug.h"
 
 #include "util/mempool.h"
+#include "util/range_strings.h"
 
 extern void fatal_error(void);
 
@@ -118,6 +121,31 @@ void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer,
 #endif // configSUPPORT_STATIC_ALLOCATION
 
 
+static void report_task_stack_usage(mpPoolSet *pool_set) {
+  // Allocate storage from pool to minimize stack usage
+  struct pool_obj {
+    TaskStatus_t task_info;
+    AppendRange rng;
+    char buf[8];
+  };
+
+  struct pool_obj *ctx = mp_alloc(pool_set, sizeof (struct pool_obj), NULL);
+  if(ctx) {
+    vTaskGetInfo(NULL, &ctx->task_info, /*xGetFreeStackSpace*/pdTRUE, eInvalid);
+
+    // We're running in a potentially small stack so printf() can't be used
+    fputs(FLAG_PREFIX(REPORTSTACK) " '", stdout);
+    fputs(ctx->task_info.pcTaskName, stdout);
+    fputs("'  min. stack = ", stdout);
+    range_init(&ctx->rng, ctx->buf, sizeof ctx->buf);
+    range_cat_uint(&ctx->rng, ctx->task_info.usStackHighWaterMark * sizeof (StackType_t));
+    fputs(ctx->buf, stdout);
+    puts(A_NONE);
+
+    mp_free(pool_set, ctx);
+  }
+}
+
 
 static void periodic_task_wrapper(void *param) {
   PeriodicTaskCfg *cfg = (PeriodicTaskCfg *)param;
@@ -150,6 +178,10 @@ static void periodic_task_wrapper(void *param) {
 
   mpPoolSet *pool_set = mp_sys_pools();
   mp_free(pool_set, cfg);
+
+  if(DEBUG_FEATURE(PF_DEBUG_SYS_LOCAL_REPORTSTACK))
+    report_task_stack_usage(pool_set);
+
   vTaskDelete(NULL);
 }
 
@@ -179,14 +211,6 @@ TaskHandle_t create_periodic_task(const char *name, configSTACK_DEPTH_TYPE stack
 
   return handle;
 }
-
-__attribute__((weak))
-uint32_t perf_timer_count(void) {
-  return 0;
-}
-
-__attribute__((weak))
-void perf_timer_init(void) {}
 
 
 // Retrieve heap stats

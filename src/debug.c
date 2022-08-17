@@ -19,7 +19,7 @@
 unsigned int g_debug_level = 0;
 
 
-#define DEBUG_FLAG_NAME_ITEM(name, ix)  #name,
+#define DEBUG_FLAG_NAME_ITEM(name, ix, help)  #name,
 static const char *s_dbg_flag_names[] = {
   DEBUG_FLAGS(DEBUG_FLAG_NAME_ITEM)
 };

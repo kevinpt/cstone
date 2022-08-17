@@ -613,7 +613,7 @@ static int32_t cmd_resize(uint8_t argc, char *argv[], void *eval_ctx) {
   if(verbose) {
     // We need a delay to wait for query response. This is running in the same
     // task as shell_process_rx() so we can't block. Create a temporary task instead.
-    create_delayed_task(resize_verbose_cb, con, STACK_BYTES(128), 80);
+    create_delayed_task(resize_verbose_cb, con, STACK_BYTES(512), 80);
     shell_suppress_prompt(&con->shell, true);
   }
 

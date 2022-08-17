@@ -28,11 +28,11 @@ extern unsigned int g_debug_level;
 
 // FIXME: Replace these placeholders
 #  define DEBUG_FLAGS(M) \
-  M(FEATURE0, 0) \
-  M(F1,    1) \
-  M(FEATURE2, 2) \
+  M(REPORTSTACK,  0, "Stack usage on task deletion") \
+  M(F1,           1, "") \
+  M(FEATURE2,     2, "") \
 
-#  define DEBUG_FLAG_ENUM_ITEM(name, ix)  PF_DEBUG_SYS_LOCAL_##name = P_DEBUG_SYS_LOCAL | P3_ARR(ix),
+#  define DEBUG_FLAG_ENUM_ITEM(name, ix, help)  PF_DEBUG_SYS_LOCAL_##name = P_DEBUG_SYS_LOCAL | P3_ARR(ix),
 enum DebugFlags {
   DEBUG_FLAGS(DEBUG_FLAG_ENUM_ITEM)
 };
@@ -48,8 +48,11 @@ enum DebugFlags {
 #define SUCCESS_PREFIX    A_BGRN u8"\u2714" // ✔
 #define FAIL_PREFIX       A_BRED u8"\u2718" // ✘
 
+#define EMOJI_BUG         u8"\U0001F41E"  // 🐞
+#define EMOJI_FLAG        u8"\U0001F6A9"  // 🚩
 
-#define EMOJI_BUG u8"\U0001F41E"  // 🐞
+#define FLAG_PREFIX(flag) "\n" EMOJI_FLAG A_MAG " " #flag ":"
+
 
 #ifdef NDEBUG
 #  define DPUTS(msg)
