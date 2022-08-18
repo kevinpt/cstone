@@ -22,6 +22,16 @@ typedef struct LedBlinker {
 } LedBlinker;
 
 
+// Generic blank patterns
+extern BlinkTime g_PatternFastBlink[];
+extern BlinkTime g_PatternSlowBlink[];
+extern BlinkTime g_PatternPulseOne[];
+extern BlinkTime g_PatternPulseTwo[];
+extern BlinkTime g_PatternPulseThree[];
+extern BlinkTime g_PatternPulseFour[];
+extern BlinkTime g_PatternFlash200ms[];
+extern BlinkTime g_PatternDelay3s[];
+
 
 #ifdef __cplusplus
 extern "C" {

@@ -23,6 +23,23 @@
 #endif
 
 
+/* LED blink pattern definitions
+   Terminate with 0 to end the pattern or use the BLINK_PAT() macro.
+   Pattern begins with LED on then toggles for each following period
+   A single entry pattern will flash the LED once for a timeout when
+   configured for 1 rep. Patterns can have 15 segments max.
+                                           ON   OFF     ON  OFF       ON  OFF ...
+*/
+BlinkTime g_PatternFastBlink[]  = BLINK_PAT(100, 100);
+BlinkTime g_PatternSlowBlink[]  = BLINK_PAT(500, 500);
+BlinkTime g_PatternPulseOne[]   = BLINK_PAT(80,  2000-80);
+BlinkTime g_PatternPulseTwo[]   = BLINK_PAT(80,  200,    80, 2000-(80+200)*1-80);
+BlinkTime g_PatternPulseThree[] = BLINK_PAT(80,  200,    80, 200,      80, 2000-(80+200)*2-80);
+BlinkTime g_PatternPulseFour[]  = BLINK_PAT(80,  200,    80, 200,      80, 200,   80, 2000-(80+200)*3-80);
+BlinkTime g_PatternFlash200ms[] = BLINK_PAT(200);
+BlinkTime g_PatternDelay3s[]    = BLINK_PAT(1, 3000);
+
+
 // List of active blinkers
 static LedBlinker *s_LedBlinkerList = NULL;
 
