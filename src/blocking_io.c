@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include "build_config.h"
 #include "cstone/platform.h"
 
 #include "FreeRTOS.h"

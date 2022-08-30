@@ -3,6 +3,16 @@
 
 // ******************** Configuration ********************
 #define USE_LOAD_MONITOR
+#define USE_CONSOLE_TASK
+
+#ifndef USE_MINIMAL_TASKS
+#  define USE_ERROR_MONITOR
+#  define USE_EVENT_MONITOR
+#  define USE_LOG_DB
+#endif
+
+
+//#define USE_LED_BLINK_PERIODIC_TASK
 
 
 extern UMsgHub g_msg_hub;

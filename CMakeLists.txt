@@ -96,9 +96,10 @@ target_compile_definitions(cstone
   PUBLIC
     USE_FREERTOS
     ${DEVICE_FAMILY_UC}
-    ${DEVICE_MODEL_UC}xx
+    ${DEVICE_MODEL_UC}
     USE_HAL_DRIVER
     USE_FULL_LL_DRIVER
+#    $<$<BOOL:${USE_MINIMAL_TASKS}>:USE_MINIMAL_TASKS>
 )
 
 

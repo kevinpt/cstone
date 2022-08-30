@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include "build_config.h"
 #include "cstone/platform.h"
 #include "build_config.h"
 #include "build_info.h"

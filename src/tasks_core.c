@@ -2,6 +2,14 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include "build_config.h"
+#include "cstone/platform.h"
+
+#ifdef PLATFORM_HOSTED
+#  include <unistd.h>
+#endif
+
+
 #include "FreeRTOS.h"
 #include "timers.h"
 #include "semphr.h"
@@ -24,15 +32,24 @@
 
 UMsgHub g_msg_hub;
 
+#ifdef USE_ERROR_MONITOR
 extern ErrorLog g_error_log;
+#endif
+#ifdef USE_LOG_DB
 extern PropDB   g_prop_db;
 extern LogDB    g_log_db;
+#endif
 
+#ifdef USE_ERROR_MONITOR
 static UMsgTarget s_tgt_error_monitor;
+#endif
+#ifdef USE_EVENT_MONITOR
 static UMsgTarget s_tgt_event_monitor;
+#endif
+#ifdef USE_LOG_DB
 static UMsgTarget s_tgt_prop_update;
-
 static TaskHandle_t s_log_db_task;
+#endif
 
 
 
@@ -45,6 +62,7 @@ static void umsg_hub_task(void *ctx) {
 }
 
 
+#ifdef USE_ERROR_MONITOR
 // TASK: Error monitor
 static void error_monitor_task(void *ctx) {
   UMsg msg;
@@ -67,8 +85,9 @@ static void error_monitor_task(void *ctx) {
     }
   }
 }
+#endif
 
-
+#ifdef USE_EVENT_MONITOR
 // TASK: Event monitor
 static void event_monitor_task(void *ctx) {
   UMsg msg;
@@ -102,7 +121,7 @@ static void event_monitor_task(void *ctx) {
     }
   }
 }
-
+#endif
 
 
 #ifdef USE_LOAD_MONITOR
@@ -153,12 +172,16 @@ unsigned blink_timestamp(void) {
 }
 
 // TASK: Schedule LED blinks
+#ifdef USE_LED_BLINK_PERIODIC_TASK
 static void blink_task_cb(void *ctx) {
+#else
+static void blink_task_cb(TimerHandle_t timer) {
+#endif
   blinkers_update_all();
   s_blink_timestamp += BLINK_TASK_MS;
 }
 
-
+#ifdef USE_CONSOLE_TASK
 // TASK: Console
 // FIXME: Consider adding a task notification for handling nearly full RX queues
 static void console_task_cb(void *ctx) {
@@ -173,6 +196,25 @@ static void console_task_cb(void *ctx) {
 }
 
 
+#  ifdef PLATFORM_HOSTED
+// TASK: Stdin read
+// Feed stdin into the console queue
+static void stdin_read_task(void *ctx) {
+  Console *con = active_console();
+
+  while(1) {
+    char buf[16];
+    int count = read(STDIN_FILENO, buf, sizeof buf);
+    if(count > 0)
+      console_rx_enqueue(con, (uint8_t *)buf, count);
+  }
+}
+#  endif
+
+#endif
+
+
+#ifdef USE_LOG_DB
 // TASK: Log DB update
 static void log_db_task_cb(void *ctx) {
   static unsigned s_log_update_timeout = 0;
@@ -200,16 +242,16 @@ static void log_db_task_cb(void *ctx) {
 static void prop_update_handler(UMsgTarget *tgt, UMsg *msg) {
   xTaskNotifyGive(s_log_db_task); // Start LogDB task timeout
 }
-
+#endif
 
 
 void core_tasks_init(void) {
   // ** Normal tasks **
 
-  xTaskCreate(umsg_hub_task, "MsgHub", STACK_BYTES(4096),
+  xTaskCreate(umsg_hub_task, "MsgHub", STACK_BYTES(2048),
               NULL, TASK_PRIO_LOW, NULL);
 
-
+#ifdef USE_ERROR_MONITOR
   xTaskCreate(error_monitor_task, "ErrorMon", STACK_BYTES(1024),
               NULL, TASK_PRIO_LOW, NULL);
 
@@ -218,8 +260,9 @@ void core_tasks_init(void) {
   umsg_tgt_add_filter(&s_tgt_error_monitor, (P1_ERROR | P2_MSK | P3_MSK | P4_MSK));
   umsg_tgt_add_filter(&s_tgt_error_monitor, (P1_WARN | P2_MSK | P3_MSK | P4_MSK));
   umsg_hub_subscribe(&g_msg_hub, &s_tgt_error_monitor);
+#endif
 
-
+#ifdef USE_EVENT_MONITOR
   xTaskCreate(event_monitor_task, "EventMon", STACK_BYTES(2048+300),
               NULL, TASK_PRIO_LOW, NULL);
 
@@ -228,7 +271,7 @@ void core_tasks_init(void) {
   umsg_tgt_add_filter(&s_tgt_event_monitor, (P1_EVENT | P2_MSK | P3_MSK | P4_MSK));
   umsg_tgt_add_filter(&s_tgt_event_monitor, (P1_DEBUG | P2_MSK | P3_MSK | P4_MSK));
   umsg_hub_subscribe(&g_msg_hub, &s_tgt_event_monitor);
-
+#endif
 
   // ** Timer tasks **
 
@@ -246,6 +289,8 @@ void core_tasks_init(void) {
   xTimerStart(load_timer, 0);
 #endif
 
+#ifdef USE_LED_BLINK_PERIODIC_TASK
+  // Run BlinkLED as an independent task
   static PeriodicTaskCfg cfg = {  // LED blink handler
     .task = blink_task_cb,
     .ctx = NULL,
@@ -255,7 +300,20 @@ void core_tasks_init(void) {
 
   create_periodic_task("BlinkLED", STACK_BYTES(256), TASK_PRIO_LOW, &cfg);
 
+#else
+  // Run BlinkLED as a timer task
+  TimerHandle_t led_timer = xTimerCreate(  // LED blink handler
+    "BlinkLED",
+    BLINK_TASK_MS,
+    pdTRUE, // uxAutoReload
+    NULL,   // pvTimerID
+    blink_task_cb
+  );
 
+  xTimerStart(led_timer, 0);
+#endif
+
+#ifdef USE_CONSOLE_TASK
   static PeriodicTaskCfg console_task_cfg = { // Console command proc
     .task   = console_task_cb,
     .ctx    = NULL,
@@ -263,9 +321,15 @@ void core_tasks_init(void) {
     .repeat = REPEAT_FOREVER
   };
 
-  create_periodic_task("Con", STACK_BYTES(4096), TASK_PRIO_LOW, &console_task_cfg);
+  create_periodic_task("Con", STACK_BYTES(2048), TASK_PRIO_LOW, &console_task_cfg);
 
+#  ifdef PLATFORM_HOSTED
+  xTaskCreate(stdin_read_task, "stdin", STACK_BYTES(1024),
+              NULL, TASK_PRIO_LOW, NULL);
+#  endif
+#endif
 
+#ifdef USE_LOG_DB
   static PeriodicTaskCfg log_db_task_cfg = { // Log DB updates
     .task   = log_db_task_cb,
     .ctx    = NULL,
@@ -279,6 +343,6 @@ void core_tasks_init(void) {
   umsg_tgt_callback_init(&s_tgt_prop_update, prop_update_handler);
   umsg_tgt_add_filter(&s_tgt_prop_update, (P1_EVENT | P2_STORAGE | P3_PROP | P4_UPDATE));
   umsg_hub_subscribe(&g_msg_hub, &s_tgt_prop_update);
-
+#endif
 }
 

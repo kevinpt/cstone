@@ -1,9 +1,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "cstone/io/gpio.h"
-#include "stm32f4xx_ll_gpio.h"
+#include "build_config.h" // Get build-specific platform settings
 
+#include "cstone/io/gpio.h"
+#if defined PLATFORM_STM32F1
+#  include "stm32f1xx_ll_gpio.h"
+#else
+#  include "stm32f4xx_ll_gpio.h"
+#endif
 
 #ifndef COUNT_OF
 #  define COUNT_OF(a) (sizeof(a) / sizeof(*(a)))
@@ -54,6 +59,22 @@ void gpio_enable_port(uint8_t port) {
   }
 }
 
+#if defined PLATFORM_STM32F1
+// STM32F1 doesn't use simple sequential pin numbers in its GPIO registers.
+// We have to translate logical pins to their encoded form.
+static inline GPIOPortData stm32__pin_encode(uint8_t pin) {
+  static const GPIOPortData s_port_pins[] = {
+    LL_GPIO_PIN_0,  LL_GPIO_PIN_1,  LL_GPIO_PIN_2,  LL_GPIO_PIN_3,
+    LL_GPIO_PIN_4,  LL_GPIO_PIN_5,  LL_GPIO_PIN_6,  LL_GPIO_PIN_7,
+    LL_GPIO_PIN_8,  LL_GPIO_PIN_9,  LL_GPIO_PIN_10, LL_GPIO_PIN_11,
+    LL_GPIO_PIN_12, LL_GPIO_PIN_13, LL_GPIO_PIN_14, LL_GPIO_PIN_15
+  };
+
+  return s_port_pins[pin & 0x0F];
+}
+#else
+#  define stm32__pin_encode(pin)  (1ul << (pin))
+#endif
 
 // Convert port index to STM32 base register for the selected port
 static inline GPIO_TypeDef *stm32__get_port_addr(uint8_t port) {
@@ -107,7 +128,9 @@ static void stm32__configure_port(GPIO_TypeDef *port_addr, GPIOPortData pin_bit,
   case GPIO_EDGE_SLOW:      stm32_speed = LL_GPIO_SPEED_FREQ_LOW; break;
   case GPIO_EDGE_MEDIUM:    stm32_speed = LL_GPIO_SPEED_FREQ_MEDIUM; break;
   case GPIO_EDGE_FAST:      stm32_speed = LL_GPIO_SPEED_FREQ_HIGH; break;
+#ifdef PLATFORM_STM32F4
   case GPIO_EDGE_VERY_FAST: stm32_speed = LL_GPIO_SPEED_FREQ_VERY_HIGH; break;
+#endif
   }
 
   LL_GPIO_InitTypeDef pin_cfg = {
@@ -115,7 +138,12 @@ static void stm32__configure_port(GPIO_TypeDef *port_addr, GPIOPortData pin_bit,
     .Mode       = LL_GPIO_MODE_OUTPUT,
     .Speed      = stm32_speed,
     .OutputType = LL_GPIO_OUTPUT_PUSHPULL,
+#ifdef PLATFORM_STM32F1
+    // STM32F1 GPIO lacks PUPDR to disable pulls. Pulls not used in output modes.
+    .Pull       = LL_GPIO_PULL_UP
+#else
     .Pull       = LL_GPIO_PULL_NO
+#endif
   };
 
   switch(GPIO_PORT_MODE(mode)) {
@@ -162,33 +190,32 @@ void gpio_init(GPIOPin *gpio, uint8_t port, uint8_t pin, unsigned short mode) {
   gpio->mode  = mode;
 
   GPIO_TypeDef *port_addr = stm32__get_port_addr(port);
-  GPIOPortData pin_bit = 1ul << pin;
+  GPIOPortData pin_bit = stm32__pin_encode(pin);
   gpio_enable_port(port);
   stm32__configure_port(port_addr, pin_bit, mode);
 }
 
 bool gpio_value(GPIOPin *gpio) {
   GPIO_TypeDef *port_addr = stm32__get_port_addr(gpio->port);
-  GPIOPortData pin_bit = 1ul << gpio->pin;
+  GPIOPortData pin_bit = stm32__pin_encode(gpio->pin);
   return LL_GPIO_IsInputPinSet(port_addr, pin_bit);
 }
 
 void gpio_set_high(GPIOPin *gpio) {
   GPIO_TypeDef *port_addr = stm32__get_port_addr(gpio->port);
-  GPIOPortData pin_bit = 1ul << gpio->pin;
+  GPIOPortData pin_bit = stm32__pin_encode(gpio->pin);
   LL_GPIO_SetOutputPin(port_addr, pin_bit);
 }
 
 void gpio_set_low(GPIOPin *gpio) {
   GPIO_TypeDef *port_addr = stm32__get_port_addr(gpio->port);
-  GPIOPortData pin_bit = 1ul << gpio->pin;
+  GPIOPortData pin_bit = stm32__pin_encode(gpio->pin);
   LL_GPIO_ResetOutputPin(port_addr, pin_bit);
 }
 
 void gpio_set(GPIOPin *gpio, bool new_value) {
-//  new_value ? gpio_set_high(gpio) : gpio_set_low(gpio);
   GPIO_TypeDef *port_addr = stm32__get_port_addr(gpio->port);
-  GPIOPortData pin_bit = 1ul << gpio->pin;
+  GPIOPortData pin_bit = stm32__pin_encode(gpio->pin);
   if(new_value)
     LL_GPIO_SetOutputPin(port_addr, pin_bit);
   else
@@ -197,22 +224,27 @@ void gpio_set(GPIOPin *gpio, bool new_value) {
 
 void gpio_toggle(GPIOPin *gpio) {
   GPIO_TypeDef *port_addr = stm32__get_port_addr(gpio->port);
-  GPIOPortData pin_bit = 1ul << gpio->pin;
+  GPIOPortData pin_bit = stm32__pin_encode(gpio->pin);
   LL_GPIO_TogglePin(port_addr, pin_bit);
 }
 
 void gpio_highz_on(GPIOPin *gpio) {
   GPIO_TypeDef *port_addr = stm32__get_port_addr(gpio->port);
-  GPIOPortData pin_bit = 1ul << gpio->pin;
+  GPIOPortData pin_bit = stm32__pin_encode(gpio->pin);
 
   // Switch to input
+#ifdef PLATFORM_STM32F1
+  // STM32F1 GPIO lacks PUPDR to disable pulls. Set with mode instead.
+  LL_GPIO_SetPinMode(port_addr, pin_bit, LL_GPIO_MODE_FLOATING);
+#else
   LL_GPIO_SetPinMode(port_addr, pin_bit, LL_GPIO_MODE_INPUT);
   LL_GPIO_SetPinPull(port_addr, pin_bit, LL_GPIO_PULL_NO);
+#endif
 }
 
 void gpio_highz_off(GPIOPin *gpio, bool new_value) {
   GPIO_TypeDef *port_addr = stm32__get_port_addr(gpio->port);
-  GPIOPortData pin_bit = 1ul << gpio->pin;
+  GPIOPortData pin_bit = stm32__pin_encode(gpio->pin);
 
   if(IS_OUTPUT_MODE(gpio->mode) || gpio->mode == GPIO_PIN_OUTPUT_OD) {
     gpio_set(gpio, new_value);

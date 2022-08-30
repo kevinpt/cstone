@@ -6,6 +6,7 @@
 #include <inttypes.h>
 #include <ctype.h>
 
+#include "build_config.h"
 #include "cstone/platform.h"
 
 #include "FreeRTOS.h"

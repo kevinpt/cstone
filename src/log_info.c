@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "build_config.h"
 #include "cstone/platform.h"
 #include "cstone/debug.h"
 

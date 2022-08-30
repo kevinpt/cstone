@@ -34,7 +34,7 @@ typedef struct __attribute__(( packed )) {
 
 // FIXME: Move to separate file
 typedef struct {
-  const char *name;     // Name of this field
+  const char * const name;     // Name of this field
   short       high_bit; // MSB bit position
   short       low_bit;  // LSB bit position
 } RegField;
@@ -44,8 +44,8 @@ typedef struct {
 #define REG_END  {"", -1, -1}
 
 typedef struct {
-  const char *name;     // Name of the register
-  RegField   *fields;   // Field array. Must be ordered from high bit down to 0.
+  const char * const name;     // Name of the register
+  const RegField * const fields;   // Field array. Must be ordered from high bit down to 0.
   short       reg_bits; // Number of bits in the register
 } RegLayout;
 
@@ -71,7 +71,7 @@ int trigger_fault_stack(void);
 
 bool report_faults(SysFaultRecord *fault_record, bool verbose);
 
-void dump_register(RegLayout *layout, uint32_t value, uint8_t left_pad, bool show_bitmap);
+void dump_register(const RegLayout * const layout, uint32_t value, uint8_t left_pad, bool show_bitmap);
 
 #ifdef __cplusplus
 }

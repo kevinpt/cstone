@@ -376,6 +376,11 @@ error.ipv4.dns[0]       // Error codes
 
 // ******************** Standard fields ********************
 
+// STM32F1 headers have a "USB" macro that conflicts here
+#ifdef USB
+#  undef USB
+#endif
+
 #define PROP_LIST(M) \
 M(P1, APP,      1) \
 M(P1, SYS,      2) \

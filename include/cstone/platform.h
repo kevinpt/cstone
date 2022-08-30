@@ -16,6 +16,7 @@
 
 #else
 #  define PLATFORM_UNKNOWN 1
+# error "Unknown platform"
 #endif
 
 // Detect target architecture
@@ -24,13 +25,17 @@
 #endif
 
 #if defined __x86_64__ || defined __i386__
-#  define PLATFORM_ARCH_INTEL
+#  define PLATFORM_ARCH_INTEL 1
 #endif
 
 
 // Catchall for determining if we are on an embedded target and can expect access to
 // typical microcontroller peripherals.
-#if !defined PLATFORM_LINUX
+#if defined PLATFORM_LINUX
+#  if !defined PLATFORM_HOSTED
+#    define PLATFORM_HOSTED 1
+#  endif
+#else
 #  define PLATFORM_EMBEDDED 1
 #endif
 

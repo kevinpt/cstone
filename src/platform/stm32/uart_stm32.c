@@ -1,7 +1,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "stm32f4xx_ll_usart.h"
+#include "build_config.h" // Get build-specific platform settings
+
+#if defined PLATFORM_STM32F1
+#  include "stm32f1xx_ll_usart.h"
+#else
+#  include "stm32f4xx_ll_usart.h"
+#endif
 
 #include "FreeRTOS.h"
 
@@ -23,9 +29,15 @@ static const UartResource s_uart_resources[] = {
   {USART1, USART1_IRQn},
   {USART2, USART2_IRQn},
   {USART3, USART3_IRQn},
+#ifdef UART4
   {UART4,  UART4_IRQn},
+#endif
+#ifdef UART5
   {UART5,  UART5_IRQn},
+#endif
+#ifdef USART6
   {USART6, USART6_IRQn},
+#endif
 #ifdef UART7
   {UART7,  UART7_IRQn},
 #endif
@@ -54,9 +66,15 @@ static void uart__clk_enable(int id) {
   case 1: __HAL_RCC_USART1_CLK_ENABLE(); break;
   case 2: __HAL_RCC_USART2_CLK_ENABLE(); break;
   case 3: __HAL_RCC_USART3_CLK_ENABLE(); break;
+#ifdef UART4
   case 4: __HAL_RCC_UART4_CLK_ENABLE(); break;
+#endif
+#ifdef UART5
   case 5: __HAL_RCC_UART5_CLK_ENABLE(); break;
+#endif
+#ifdef USART6
   case 6: __HAL_RCC_USART6_CLK_ENABLE(); break;
+#endif
 #ifdef UART7
   case 7: __HAL_RCC_UART7_CLK_ENABLE(); break;
 #endif
@@ -73,7 +91,7 @@ void uart_io_init(void) {}
 
 void uart_init(int id, uint8_t port, uint32_t baud) {
   uart__clk_enable(id);
-  gpio_enable_port(port);
+  gpio_enable_port(port); // FIXME: Not really necessary
 
   // Configure peripheral
   LL_USART_InitTypeDef uart_cfg = {0};

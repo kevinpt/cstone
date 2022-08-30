@@ -9,6 +9,7 @@
 #include "util/dhash.h"
 #include "util/mempool.h"
 
+#include "build_config.h"
 #include "cstone/platform.h"
 #include "cstone/prop_id.h"
 #include "cstone/prop_db.h"

@@ -5,13 +5,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "stm32f4xx.h"
+#include "build_config.h" // Get build-specific platform settings
+#ifdef PLATFORM_STM32F1
+#  include "stm32f1xx.h"
+#else
+#  include "stm32f4xx.h"
+#endif
 
 #include "cstone/faults.h"
 #include "util/crc16.h"
 #include "cstone/term_color.h"
 #include "cstone/blocking_io.h"
-#include "lib_cfg/build_config.h"
 
 #ifndef COUNT_OF
 #  define COUNT_OF(a) (sizeof(a) / sizeof(*(a)))
@@ -102,20 +106,20 @@ int trigger_fault_stack(void) {
 
 // ******************** Fault reporting ********************
 
-static RegField s_reg_hfsr_fields[] = {
+static const RegField s_reg_hfsr_fields[] = {
   REG_BIT("DEBUGEVT", 31),
   REG_BIT("FORCED", 30),  // Lower priority exception forced to hard fault
   REG_BIT("VECTTBL", 1),
   REG_END
 };
 
-static RegLayout s_reg_hfsr = {
+static const RegLayout s_reg_hfsr = {
   .name     = "HFSR",
   .fields   = s_reg_hfsr_fields,
   .reg_bits = 32
 };
 
-static RegField s_reg_cfsr_fields[] = {
+static const RegField s_reg_cfsr_fields[] = {
   // UsageFault
   REG_BIT("DIVBYZERO", 25),
   REG_BIT("UNALIGNED", 24),
@@ -143,14 +147,14 @@ static RegField s_reg_cfsr_fields[] = {
   REG_END
 };
 
-static RegLayout s_reg_cfsr = {
+static const RegLayout s_reg_cfsr = {
   .name     = "CFSR",
   .fields   = s_reg_cfsr_fields,
   .reg_bits = 32
 };
 
 
-static RegField s_reg_psr_fields[] = {
+static const RegField s_reg_psr_fields[] = {
   REG_BIT("N", 31),
   REG_BIT("Z", 30), // Zero flag
   REG_BIT("C", 29), // Carry flag
@@ -164,7 +168,7 @@ static RegField s_reg_psr_fields[] = {
   REG_END
 };
 
-static RegLayout s_reg_psr = {
+static const RegLayout s_reg_psr = {
   .name     = "PSR",
   .fields   = s_reg_psr_fields,
   .reg_bits = 32
@@ -251,7 +255,7 @@ static void print_binary(uint32_t value, uint8_t bits) {
 }
 
 
-void dump_register(RegLayout *layout, uint32_t value, uint8_t left_pad, bool show_bitmap) {
+void dump_register(const RegLayout * const layout, uint32_t value, uint8_t left_pad, bool show_bitmap) {
 /*
   HFSR = 0xFFAA3210
     31      23      15      7       

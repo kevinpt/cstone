@@ -60,10 +60,10 @@ typedef void (*ConsoleInputRedirect)(Console *con, KeyCode key_code, void *eval_
 typedef bool (*ShellCommandHandler)(char *input, void *ctx);
 
 typedef struct {
-  const char      name[16];
+  const char * const name;
   ConsoleCommand  cmd;
 #ifdef USE_COMMAND_HELP_DETAIL
-  const char      help[24];
+  const char * const help;
 #endif
 } ConsoleCommandDef;
 

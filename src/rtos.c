@@ -4,12 +4,19 @@
 #include <malloc.h> // For mallinfo()
 #include <string.h>
 
+#include "build_config.h" // Get build-specific platform settings
 #include "cstone/platform.h"
 
-#ifdef PLATFORM_EMBEDDED
+#if defined PLATFORM_STM32
 #  include <unistd.h> // For sbrk()
-#  include "stm32f4xx_hal.h"
-#else
+#  define STM32_HAL_LEGACY  // Inhibit legacy header
+#  if defined PLATFORM_STM32F1
+#    include "stm32f1xx_hal.h"
+#  else
+#    include "stm32f4xx_hal.h"
+#  endif
+
+#else // Hosted
 #  include "cstone/timing.h"
 #endif
 
@@ -30,6 +37,7 @@ extern void fatal_error(void);
 #  ifdef PLATFORM_EMBEDDED
 __attribute__(( section(FREERTOS_HEAP_SECTION) ))
 #  endif
+_Alignas(max_align_t)
 uint8_t ucHeap[configTOTAL_HEAP_SIZE];
 #endif
 

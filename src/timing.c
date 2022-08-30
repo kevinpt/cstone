@@ -1,14 +1,19 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "build_config.h" // Get build-specific platform settings
 #include "cstone/platform.h"
 
-#ifndef PLATFORM_EMBEDDED
+#if defined PLATFORM_HOSTED
 #  include <unistd.h>
 #  include <time.h>
-#else
+#elif defined PLATFORM_STM32
 #  define STM32_HAL_LEGACY  // Inhibit legacy header
-#  include "stm32f4xx_hal.h"
+#  if defined PLATFORM_STM32F1
+#    include "stm32f1xx_hal.h"
+#  else
+#    include "stm32f4xx_hal.h"
+#  endif
 #endif
 
 #include "FreeRTOS.h"
@@ -17,7 +22,7 @@
 
 
 
-#ifndef PLATFORM_EMBEDDED
+#if defined PLATFORM_HOSTED
 unsigned long millis(void) {
   unsigned long msec;
   struct timespec ts;
@@ -55,7 +60,7 @@ void delay_millis(uint32_t msec) {
 
 
 
-#else // PLATFORM_EMBEDDED
+#else // PLATFORM_STM32
 unsigned long millis(void) {
   return HAL_GetTick();
 }

@@ -2,9 +2,17 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include "build_config.h" // Get build-specific platform settings
 #include "cstone/platform.h"
-#include "stm32f4xx_hal.h"
-#include "stm32f4xx_ll_rcc.h"
+
+#define STM32_HAL_LEGACY  // Inhibit legacy header
+#if defined PLATFORM_STM32F1
+#  include "stm32f1xx_hal.h"
+#  include "stm32f1xx_ll_rcc.h"
+#else
+#  include "stm32f4xx_hal.h"
+#  include "stm32f4xx_ll_rcc.h"
+#endif
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -33,7 +41,9 @@ ResetSource get_reset_source(void) {
 
   if(reset & RCC_CSR_PORRSTF) return RESET_POWERON;
   // Brown out reset is also triggered by power on so this must come after that check
+#if !defined PLATFORM_STM32F1
   if(reset & RCC_CSR_BORRSTF) return RESET_BROWNOUT;
+#endif
 
   if(reset & RCC_CSR_SFTRSTF) return RESET_SOFTWARE;
 
@@ -56,7 +66,9 @@ void report_reset_source(void) {
   if(LL_RCC_IsActiveFlag_IWDGRST()) {COMMA(); fputs("IWDG", stdout); items++;}
   if(LL_RCC_IsActiveFlag_SFTRST())  {COMMA(); fputs("Software", stdout); items++;}
   if(LL_RCC_IsActiveFlag_PORRST())  {COMMA(); fputs("Power on/down", stdout); items++;}
+#if !defined PLATFORM_STM32F1
   if(LL_RCC_IsActiveFlag_BORRST())  {COMMA(); fputs("Brownout", stdout);}
+#endif
   if(LL_RCC_IsActiveFlag_PINRST())  {COMMA(); fputs("NRST pin", stdout); items++;}
   putnl();
 }
