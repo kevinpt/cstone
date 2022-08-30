@@ -270,6 +270,11 @@ static inline void mp__init_pool(mpPool *pool, size_t elements, size_t element_s
 
 /*
 Create a dynamically allocated memory pool
+
+The ``element_size`` argument should be large enough to hold at least two pointers
+on the target architecture when ``USE_MP_POINTER_CHECK`` is enabled or one pointer
+if it's disabled.
+
 Args:
   elements     : Number of elements in the pool
   element_size : Size of each element (Must be large enough to contain an mpPoolChunk object)
@@ -293,6 +298,26 @@ mpPool *mp_create_pool(size_t elements, size_t element_size, size_t alignment) {
 
 /*
 Create a statically allocated memory pool
+
+The static buffer should be allocated as follows:
+
+.. code-block:: c
+
+  alignas(mpPool)
+  static uint8_t pool_buf[NUM_ELEMENTS * ELEMENT_SIZE + MP_STATIC_PADDING(alignment)];
+
+Note that the pool will contain fewer elements than specified if ``element_size``
+is not a multiple of ``alignment``. When this is the case ``element_size`` is
+rounded up to the nearest multiple so that each element in the ``buf`` array has
+the correct alignment.
+
+If the ``buf`` argument is not aligned to match that of mpPool then it will be
+realigned with additional loss of storage space.
+
+The ``element_size`` argument should be large enough to hold at least two pointers
+on the target architecture when ``USE_MP_POINTER_CHECK`` is enabled or one pointer
+if it's disabled.
+
 Args:
   buf          : Static buffer to contain the pool
   buf_len      : Size of buf
