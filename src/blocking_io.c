@@ -23,7 +23,7 @@ int bprintf(const char *fmt, ...) {
 #ifdef PLATFORM_EMBEDDED
   Console *con = active_console();
   if(con)
-    xSemaphoreTake(con->tx_empty, portMAX_DELAY); // Block until TX queue is empty
+    xSemaphoreTake(con->stream.tx_empty, portMAX_DELAY); // Block until TX queue is empty
 #endif
 
   va_start(args, fmt);
@@ -38,7 +38,7 @@ int bputs(const char *str) {
 #ifdef PLATFORM_EMBEDDED
   Console *con = active_console();
   if(con)
-    xSemaphoreTake(con->tx_empty, portMAX_DELAY); // Block until TX queue is empty
+    xSemaphoreTake(con->stream.tx_empty, portMAX_DELAY); // Block until TX queue is empty
 #endif
 
   return puts(str);
@@ -49,7 +49,7 @@ int bfputs( const char *str, FILE *stream) {
 #ifdef PLATFORM_EMBEDDED
   Console *con = active_console();
   if(con)
-    xSemaphoreTake(con->tx_empty, portMAX_DELAY); // Block until TX queue is empty
+    xSemaphoreTake(con->stream.tx_empty, portMAX_DELAY); // Block until TX queue is empty
 #endif
 
   return fputs(str, stream);

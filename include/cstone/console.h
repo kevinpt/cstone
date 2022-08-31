@@ -3,9 +3,8 @@
 
 #include "cstone/isr_queue.h"
 #include "cstone/console_shell.h"
+#include "cstone/dual_stream.h"
 
-
-typedef void (*ConsoleIOSend)(Console *con);
 
 
 // Basic configuration struct for console_alloc() and helpers
@@ -36,10 +35,7 @@ typedef struct ConsoleConfigFull {
   ConsolePrompt       show_prompt;
   void               *eval_ctx;
 
-  IsrQueue          *tx_queue;
-  IsrQueue          *rx_queue;
-  ConsoleIOSend       io_send;   // Notify interface that TX data is available
-  void               *io_ctx;
+  DualStreamConfig  stream;
 
 } ConsoleConfigFull;
 
@@ -75,15 +71,7 @@ struct Console {
   struct Console     *next;
   ConsoleID           id;
 
-  IsrQueue           *tx_queue;
-  IsrQueue           *rx_queue;
-  SemaphoreHandle_t   tx_lock;
-  SemaphoreHandle_t   rx_lock;
-
-  SemaphoreHandle_t   tx_empty; // Signal blocking print routines when it is safe to proceed
-
-  ConsoleIOSend       io_send;   // Notify interface that TX data is available
-  void               *io_ctx;
+  DualStream          stream;
 
   // Flags
   unsigned            blocking_stdout: 1;  // Force all prints to block
@@ -119,7 +107,7 @@ Console *console_find(ConsoleID id);
 
 static inline size_t console_rx_enqueue(Console *con, uint8_t *data, size_t len) {
   // Input to the RX queue should have a single writer so no need to lock
-  return isr_queue_push(con->rx_queue, data, len);
+  return isr_queue_push(con->stream.rx_queue, data, len);
 }
 
 

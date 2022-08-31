@@ -821,11 +821,11 @@ void shell_process_rx(Console *con) {
   char ch;
   bool cmd_ready = false;
 
-  if(isr_queue_count(con->rx_queue) == 0) // Nothing new to process
+  if(isr_queue_count(con->stream.rx_queue) == 0) // Nothing new to process
     return;
 
   // Transfer queued input to line buf until end of line
-  while(isr_queue_pop_one(con->rx_queue, (uint8_t *)&ch)) {
+  while(isr_queue_pop_one(con->stream.rx_queue, (uint8_t *)&ch)) {
     if(!parse_escape_code(&con->shell.escape_parser, ch))
       continue; // Still parsing escape sequence
 

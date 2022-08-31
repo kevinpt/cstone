@@ -128,16 +128,16 @@ size_t console_rx_unqueue(Console *con, uint8_t *data, size_t len) {
   // Multiple readers (tasks) needs lock
   bool have_lock = false;
 
-  if(con->rx_lock && !IN_ISR()) {
-    xSemaphoreTake(con->rx_lock, portMAX_DELAY);
+  if(con->stream.rx_lock && !IN_ISR()) {
+    xSemaphoreTake(con->stream.rx_lock, portMAX_DELAY);
     have_lock = true;
   }
 
   // Copy data from RX queue
-  size_t num_read = isr_queue_pop(con->rx_queue, (uint8_t *)data, len);
+  size_t num_read = isr_queue_pop(con->stream.rx_queue, (uint8_t *)data, len);
 
   if(have_lock)
-    xSemaphoreGive(con->rx_lock);
+    xSemaphoreGive(con->stream.rx_lock);
 
   return num_read;
 }
@@ -147,16 +147,16 @@ size_t console_rx_unqueue(Console *con, uint8_t *data, size_t len) {
 static size_t console__tx_nl_xlate(Console *con, uint8_t *data, size_t len) {
   size_t copied = 0;
 
-  while(len && !isr_queue_is_full(con->tx_queue)) {
+  while(len && !isr_queue_is_full(con->stream.tx_queue)) {
     uint8_t ch = *data;
 
     if(!con->prev_cr && !con->injected_cr && ch == '\n') { // Insert CR before NL
       ch = '\r';
-      isr_queue_push_one(con->tx_queue, &ch);
+      isr_queue_push_one(con->stream.tx_queue, &ch);
       con->injected_cr = true;
 
     } else {  // Normal char
-      isr_queue_push_one(con->tx_queue, &ch);
+      isr_queue_push_one(con->stream.tx_queue, &ch);
       data++;
       len--;
       copied++;
@@ -173,31 +173,31 @@ static size_t console__tx_nl_xlate(Console *con, uint8_t *data, size_t len) {
 size_t console_send(Console *con, uint8_t *data, size_t len) {
   size_t copied = 0;
 
-  if(!con->io_send)
+  if(!con->stream.io_send)
     return 0;
 
   if(con->blocking_stdout) // Wait until FIFO is empty
-    xSemaphoreTake(con->tx_empty, portMAX_DELAY);
+    xSemaphoreTake(con->stream.tx_empty, portMAX_DELAY);
 
 
   // Single reader (ISR) is safe
   // Multiple writers (tasks) needs lock
   bool have_lock = false;
-  if(con->tx_lock && !IN_ISR()) {
-    xSemaphoreTake(con->tx_lock, portMAX_DELAY);
+  if(con->stream.tx_lock && !IN_ISR()) {
+    xSemaphoreTake(con->stream.tx_lock, portMAX_DELAY);
     have_lock = true;
   }
 
   // Copy data to queue with optional conversions for bare newlines
   if(con->nl_xlat_off)
-    copied = isr_queue_push(con->tx_queue, data, len);
+    copied = isr_queue_push(con->stream.tx_queue, data, len);
   else  // NL --> CRLF
     copied = console__tx_nl_xlate(con, data, len);
 
   if(have_lock)
-    xSemaphoreGive(con->tx_lock);
+    xSemaphoreGive(con->stream.tx_lock);
 
-  con->io_send(con);
+  con->stream.io_send(&con->stream);
 
   return copied;
 }
@@ -242,27 +242,13 @@ void console_name(Console *con, char *name, size_t name_len) {
 void console_init(Console *con, ConsoleConfigFull *cfg) {
   memset(con, 0, sizeof(*con));
 
-  con->tx_queue     = cfg->tx_queue;
-  con->rx_queue     = cfg->rx_queue;
-  con->io_send      = cfg->io_send;
-  con->io_ctx       = cfg->io_ctx;
-
-  con->tx_lock = xSemaphoreCreateBinary();
-  xSemaphoreGive(con->tx_lock);
-
-  con->rx_lock = xSemaphoreCreateBinary();
-  xSemaphoreGive(con->rx_lock);
-
-  con->tx_empty = xSemaphoreCreateBinary();
-  xSemaphoreGive(con->tx_empty);
+  dualstream_init(&con->stream, &cfg->stream);
 
   con->term_size = (TerminalSize){80, 25};
 
   shell_init(&con->shell, cfg);
   console_query_terminal_size(con);
 }
-
-
 
 
 // Default console prompt
@@ -316,10 +302,10 @@ Console *console_alloc(ConsoleConfigBasic *cfg) {
     .cmd_suite      = cfg->cmd_suite,
     .show_prompt    = show_prompt,
     .eval_ctx       = NULL,
-    .tx_queue       = tx_queue,
-    .rx_queue       = rx_queue,
-    .io_send        = NULL,
-    .io_ctx         = NULL
+    .stream = {
+      .tx_queue = tx_queue,
+      .rx_queue = rx_queue
+    }
   };
 
   console_init(con, &full_cfg);

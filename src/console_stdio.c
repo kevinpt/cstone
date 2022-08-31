@@ -42,17 +42,17 @@ void configure_posix_terminal(void) {
 
 
 // Callback for Console object
-static void stdio_send(Console *con) {
+static void stdio_send(DualStream *stream) {
   uint8_t *data;
   size_t data_len;
 
   // Dump tx_queue to stdout
-  data_len = isr_queue_peek(con->tx_queue, &data);
+  data_len = isr_queue_peek(stream->tx_queue, &data);
   while(data_len) {
     for(size_t i = 0; i < data_len; i++)
       fputc(data[i], stdout);
-    isr_queue_discard(con->tx_queue, data_len);
-    data_len = isr_queue_peek(con->tx_queue, &data);
+    isr_queue_discard(stream->tx_queue, data_len);
+    data_len = isr_queue_peek(stream->tx_queue, &data);
   }
 }
 
@@ -61,7 +61,7 @@ bool stdio_console_init(ConsoleConfigBasic *cfg) {
 
   Console *con = console_alloc(cfg);
   if(con) {
-    con->io_send = stdio_send;
+    con->stream.io_send = stdio_send;
     con->id = (ConsoleID){.kind = CON_STDIO, .id = 0};
     console_add(con);
 

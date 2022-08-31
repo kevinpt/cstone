@@ -3,6 +3,7 @@ set(CSTONE_SOURCE_COMMON
     src/debug.c
     src/led_blink.c
     src/isr_queue.c
+    src/dual_stream.c
     src/console.c
     src/console_shell.c
     src/blocking_io.c
