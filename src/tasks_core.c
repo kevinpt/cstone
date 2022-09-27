@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "build_config.h"
 #include "cstone/platform.h"
@@ -225,6 +226,8 @@ static void log_db_task_cb(void *ctx) {
 
     // Start timeout
     s_log_update_timeout = (LOG_DB_TASK_DELAY_MS / LOG_DB_TASK_MS) + 1;
+
+    update_prng_seed(&g_prop_db); // Generate a new seed
 
   } else {  // Timeout is active
     if(--s_log_update_timeout > 0) // Not expired

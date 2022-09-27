@@ -10,12 +10,44 @@
 #include "cstone/log_db.h"
 #include "cstone/log_compress.h"
 #include "cstone/debug.h"
+#include "cstone/timing.h"
+#include "cstone/rtc_device.h"
 
 #include "cstone/log_props.h"
-
+#include "util/random.h"
 
 #define USE_PROP_COMPRESSION
 
+
+/*static inline uint32_t rot_left(uint32_t n, unsigned bits) {*/
+/*  const unsigned mask = 8*sizeof(n) - 1;*/
+/*  bits &= mask;*/
+
+/*  return (n << bits) | (n >> ((-bits) & mask));*/
+/*}*/
+
+
+static inline uint32_t rot_right(uint32_t n, unsigned bits) {
+  const unsigned mask = 8*sizeof(n) - 1;
+  bits &= mask;
+
+  return (n >> bits) | (n << ((-bits) & mask));
+}
+
+
+void update_prng_seed(PropDB *db) {
+  uint32_t seed = millis() * micros();
+
+  if(rtc_valid_time(rtc_sys_device()))
+    seed ^= (uint32_t)rtc_get_time(rtc_sys_device());
+
+  PropDBEntry entry;
+  if(prop_get(db, P_SYS_PRNG_LOCAL_VALUE, &entry))
+    seed ^= rot_right(entry.value, 8);
+
+  prop_set_uint(db, P_SYS_PRNG_LOCAL_VALUE, seed, 0);
+  DPRINT("New seed: %08lX\n", seed);
+}
 
 
 bool save_props_to_log(PropDB *db, LogDB *log_db, bool compress) {
