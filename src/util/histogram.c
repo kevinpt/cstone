@@ -34,6 +34,38 @@ DEALINGS IN THE SOFTWARE.
 #include "minmax.h"
 
 
+static bool histogram_init_from_buf(Histogram *hist, size_t hist_size, size_t num_bins,
+                          int32_t bin_low, int32_t bin_high, bool track_overflow) {
+
+  if(!hist)
+    return false;
+
+  // Calculate step size without overflow bin
+  int32_t bin_step = (bin_high - bin_low) / num_bins;
+  if(bin_low + (bin_step * (int32_t)num_bins) < bin_high) // Round up
+    bin_step++;
+
+  // Verify hist is large enough
+  size_t require_size = sizeof(Histogram) + num_bins*sizeof(uint32_t);
+  if(track_overflow) {
+    require_size += sizeof(uint32_t); // Add extra bin
+    num_bins++;
+  }
+
+  if(hist_size < require_size)
+    return false;
+
+  memset(hist, 0, hist_size);
+
+  hist->bin_low  = bin_low;
+  hist->bin_high = bin_high;
+  hist->bin_step = bin_step;
+  hist->num_bins = num_bins;
+  hist->track_overflow = track_overflow;
+
+  return true;
+}
+
 /*
 Prepare a histogram structure
 
@@ -48,31 +80,15 @@ Returns:
 */
 Histogram *histogram_init(size_t num_bins, int32_t bin_low, int32_t bin_high, bool track_overflow) {
   size_t hist_size = sizeof(Histogram) + num_bins*sizeof(uint32_t);
-
-  // Calculate step size without overflow bin
-  int32_t bin_step = (bin_high - bin_low) / num_bins;
-  if(bin_low + (bin_step * (int32_t)num_bins) < bin_high)
-    bin_step++;
-
-  if(track_overflow) {
+  if(track_overflow)
     hist_size += sizeof(uint32_t); // Add extra bin
-    num_bins++;
-  }
 
   Histogram *hist = malloc(hist_size);
-
-  memset(hist, 0, hist_size);
-
-  if(hist) {
-    hist->bin_low  = bin_low;
-    hist->bin_high = bin_high;
-    hist->bin_step = bin_step;
-    hist->num_bins = num_bins;
-    hist->track_overflow = track_overflow;
-  }
+  histogram_init_from_buf(hist, hist_size, num_bins, bin_low, bin_high, track_overflow);
 
   return hist;
 }
+
 
 /*
 Reset collected bin counts in a histogram

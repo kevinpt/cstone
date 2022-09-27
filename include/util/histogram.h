@@ -39,6 +39,9 @@ extern "C" {
 #endif
 
 Histogram *histogram_init(size_t num_bins, int32_t bin_low, int32_t bin_high, bool track_overflow);
+static inline void histogram_free(Histogram *hist) {
+  free(hist);
+}
 void histogram_reset(Histogram *hist);
 void histogram_set_bounds(Histogram *hist, int32_t bin_low, int32_t bin_high);
 void histogram_add_sample(Histogram *hist, int32_t sample);
