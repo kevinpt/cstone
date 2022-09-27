@@ -174,6 +174,9 @@ void prop_db_transact_end(PropDB *db) {
 
 void prop_db_transact_end_no_update(PropDB *db) {
   atomic_fetch_sub((atomic_uint *)&db->transactions, 1);
+
+  if(atomic_load((atomic_uint *)&db->transactions) == 0)
+    db->persist_updated = false;
 }
 
 
