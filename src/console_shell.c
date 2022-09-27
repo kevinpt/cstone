@@ -358,15 +358,48 @@ void shell_init(ConsoleShell *shell, ConsoleConfigFull *cfg) {
 
 
 static uint8_t shell__parse_args(ConsoleShell *shell) {
-  char *save_state;
+  // Split arguments in the line buffer on whitespace boundaries while preserving
+  // quoted strings.
+  char *pos = shell->line.buf;
+  bool in_quote = false;
 
   shell->argc = 0;
   memset(shell->argv, 0, CONSOLE_ARGV_LEN * sizeof(char *));
 
-  char *tok = strtok_r(shell->line.buf, s_cmd_delims, &save_state);
-  while(tok && shell->argc < CONSOLE_MAX_ARGS+1) {
-    shell->argv[shell->argc++] = tok;
-    tok = strtok_r(NULL, s_cmd_delims, &save_state);
+  // Command in argv[0] + up to CONSOLE_MAX_ARGS arguments
+
+  while(*pos && shell->argc < CONSOLE_MAX_ARGS+1) {
+    // Skip over whitespace
+    while(*pos && strchr(s_cmd_delims, *pos)) {
+      pos++;
+    }
+
+    if(*pos == '"' && !in_quote) {
+      in_quote = true;
+      pos++;
+    }
+
+    if(*pos == '\0') // No more arguments
+      break;
+
+    shell->argv[shell->argc++] = pos;
+    // Find end of this arg
+    if(!in_quote) {
+      while(*pos && *pos != '"' && strchr(s_cmd_delims, *pos) == NULL) {
+        pos++;
+      }
+      if(*pos == '"')
+        in_quote = true;
+
+    } else { // Quoted string is only terminated by an end quote
+      while(*pos && *pos != '"') {
+        pos++;
+      }
+      in_quote = false;
+    }
+
+    if(*pos != '\0')
+      *pos++ = '\0';  // Replace whitespace or end quote with NUL
   }
 
   return shell->argc;
