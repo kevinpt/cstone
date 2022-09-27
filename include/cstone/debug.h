@@ -29,7 +29,7 @@ extern unsigned int g_debug_level;
 // FIXME: Replace these placeholders
 #  define DEBUG_FLAGS(M) \
   M(REPORTSTACK,  0, "Stack usage on task deletion") \
-  M(F1,           1, "") \
+  M(RTCCAL,       1, "RTC calibration status") \
   M(FEATURE2,     2, "") \
 
 #  define DEBUG_FLAG_ENUM_ITEM(name, ix, help)  PF_DEBUG_SYS_LOCAL_##name = P_DEBUG_SYS_LOCAL | P3_ARR(ix),
@@ -86,6 +86,7 @@ bool debug_flag_set_by_name(const char *flag_name, bool value);
 bool debug_flag_get(uint32_t prop);
 void debug_flag_dump(void);
 
+__attribute__((format(printf, 1, 2)))
 void debug__printf(const char *msg, ...);
 
 #ifdef __cplusplus

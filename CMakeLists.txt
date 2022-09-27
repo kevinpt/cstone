@@ -27,6 +27,8 @@ set(CSTONE_SOURCE_COMMON
     src/rtos.c
     src/timing.c
     src/cmds_core.c
+    src/rtc_device.c
+    src/rtc_soft.c
     src/util/histogram.c
     src/util/bsd_string.c
     src/util/search.c
@@ -41,6 +43,7 @@ set(CSTONE_SOURCE_COMMON
     src/util/string_ops.c
     src/util/glob.c
     src/util/stats.c
+    src/util/random.c
 )
 
 set(CSTONE_SOURCE_STM32
@@ -51,10 +54,12 @@ set(CSTONE_SOURCE_STM32
     src/platform/stm32/cmds_stm32.c
     src/platform/stm32/log_stm32.c
     src/platform/stm32/faults.c
+    src/platform/stm32/rtc_stm32.c
 )
 
 set(CSTONE_SOURCE_POSIX
     src/platform/posix/target_posix.c
+    src/platform/posix/rtc_hosted.c
 )
 
 

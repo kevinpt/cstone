@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <time.h>
 
 #include "build_config.h"
 #include "cstone/platform.h"
@@ -30,6 +31,7 @@
 #include "cstone/timing.h"
 #include "cstone/tasks_core.h"
 #include "cstone/blocking_io.h"
+#include "cstone/rtc_device.h"
 
 #include "util/getopt_r.h"
 #include "util/string_ops.h"
@@ -53,6 +55,136 @@ static int32_t cmd_build(uint8_t argc, char *argv[], void *eval_ctx) {
 
 static int32_t cmd_clear(uint8_t argc, char *argv[], void *eval_ctx) {
   fputs("\033[H\033[2J", stdout);
+  return 0;
+}
+
+
+static bool parse_date(char *date, struct tm *new_date) {
+  char *fields[3];
+  char *date_field = NULL;
+  char *time_field = NULL;
+
+  memset(new_date, 0, sizeof *new_date);
+
+  // Parse date of the form: YYYY-MM-DDTHH:MM:SS
+
+  // Split string into date and time
+  if(str_split(date, "T ", fields, COUNT_OF(fields)) != 2)
+    return false;
+
+  date_field = fields[0];
+  time_field = fields[1];
+
+  // Split date on hyphens
+  if(date_field) {
+    if(str_split(date_field, "-", fields, COUNT_OF(fields)) != 3)
+      return false;
+
+    new_date->tm_year = strtol(fields[0], NULL, 10) - 1900;
+    new_date->tm_mon  = strtol(fields[1], NULL, 10) - 1;
+    new_date->tm_mday = strtol(fields[2], NULL, 10);
+  }
+
+  // Split time on colons
+  if(time_field) {
+    if(str_split(time_field, ":", fields, COUNT_OF(fields)) != 3)
+      return false;
+
+    new_date->tm_hour = strtol(fields[0], NULL, 10);
+    new_date->tm_min  = strtol(fields[1], NULL, 10);
+    new_date->tm_sec  = strtol(fields[2], NULL, 10);
+  }
+
+  return true;
+}
+
+
+#if 0
+static RegField s_reg_RCC_BDCR_fields[] = {
+  REG_BIT("BDRST",    16),
+  REG_BIT("RTCEN",    15),
+  REG_SPAN("RTCSEL",  9, 8),
+  REG_BIT("LSEBYP",   2),
+  REG_BIT("LSERDY",   1),
+  REG_BIT("LSEON",    0),
+  REG_END
+};
+
+static RegLayout s_reg_RCC_BDCR = {
+  .name     = "RCC_BDCR",
+  .fields   = s_reg_RCC_BDCR_fields,
+  .reg_bits = 32
+};
+#endif
+
+static int32_t cmd_date(uint8_t argc, char *argv[], void *eval_ctx) {
+  GetoptState state = {0};
+  state.report_errors = true;
+
+  int c;
+  char *set_date = NULL;
+  int cal_error = 0;
+  bool cal_dry_run = false;
+  bool cal_clear = false;
+
+  while((c = getopt_r(argv, "s:c:drh", &state)) != -1) {
+    switch(c) {
+    case 's':
+      set_date = (char *)state.optarg; break;
+    case 'c':
+      cal_error = strtol(state.optarg, NULL, 10); break;
+    case 'd':
+      cal_dry_run = true; break;
+    case 'r':
+      cal_clear = true; break;
+    case 'h':
+      puts("date [-s <new date>] [-c <cal error>] [-d] [-r]");
+      return 0;
+      break;
+
+    default:
+    case ':':
+    case '?':
+      return -3;
+      break;
+    }
+  }
+
+
+  if(cal_clear) {
+    rtc_calibrate(rtc_sys_device(), 0, RTC_CAL_CLEAR);
+    set_date = NULL;
+
+  } else if(cal_error != 0) {
+    RTCCalibrateOp cal_op = RTC_CAL_SET;
+    if(cal_dry_run) cal_op |= RTC_CAL_DRY_RUN;
+
+    if(!rtc_calibrate(rtc_sys_device(), cal_error, cal_op)) {
+      puts("Calibration failed");
+      return -1;
+    }
+    set_date = NULL;
+  }
+
+
+  if(set_date) {
+    struct tm new_date;
+    if(parse_date(set_date, &new_date)) {
+      time_t new_time = mktime(&new_date);
+      rtc_set_time(rtc_sys_device(), new_time);
+    }
+  }
+
+//  DPRINT("LSE: %s", LL_RCC_LSE_IsReady() ? "OK" : "Not ready");
+//  dump_register(&s_reg_RCC_BDCR,        RCC->BDCR, 2, /*show_bitmap*/true);
+
+  if(!rtc_valid_time(rtc_sys_device()))
+    puts("Invalid time");
+  time_t now = rtc_get_time(rtc_sys_device());
+  char buf[32];
+  format_time(now, buf, sizeof buf);
+  puts(buf);
+
   return 0;
 }
 
@@ -717,6 +849,7 @@ static int32_t cmd_uptime(uint8_t argc, char *argv[], void *eval_ctx) {
 const ConsoleCommandDef g_core_cmd_set[] = {
   CMD_DEF("build",    cmd_build,      "Report build info"),
   CMD_DEF("clear",    cmd_clear,      "Clear screen"),
+  CMD_DEF("date",     cmd_date,       "Date and time"),
   CMD_DEF("debug",    cmd_debug,      "Config debug modes"),
   CMD_DEF("elog",     cmd_elog,       "Dump error log"),
   CMD_DEF("error",    cmd_error,      "Test error"),
