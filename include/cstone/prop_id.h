@@ -407,12 +407,14 @@ M(P1, R127,     127) \
 \
 M(P2, INFO,     1) \
 M(P2, SYS,      2) \
-M(P2, STORAGE,  3) \
-M(P2, CON,      4) \
-M(P2, USB,      5) \
-M(P2, SPI,      6) \
-M(P2, I2C,      7) \
-M(P2, BUTTON,   8) \
+M(P2, HW,       3) \
+M(P2, STORAGE,  4) \
+M(P2, CON,      5) \
+M(P2, USB,      6) \
+M(P2, SPI,      7) \
+M(P2, I2C,      8) \
+M(P2, BUTTON,   9) \
+M(P2, PRNG,     10) \
 M(P2, R127,     127) \
 \
 M(P3, INFO,     1) \
@@ -500,6 +502,8 @@ struct PropNamespace {
 
 // Generate definitions for namespace hash table
 #define PROP_FIELD_DEF(level, ename, val)   {.field = PNAME(level, ename), .name = #level #ename},
+
+#define P_SYS_PRNG_LOCAL_VALUE        (P1_SYS | P2_PRNG | P3_LOCAL | P4_VALUE)
 
 
 #ifdef __cplusplus

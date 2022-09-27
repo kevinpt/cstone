@@ -47,10 +47,7 @@ DEALINGS IN THE SOFTWARE.
 #define P_KIND_BLOB    0x04
 #define P_KIND_FUNC    0x05
 
-
-#define P_EVENT_STORAGE_PROP_UPDATE    (P1_EVENT | P2_STORAGE | P3_PROP | P4_UPDATE)
-
-
+#define P_EVENT_STORAGE_PROP_UPDATE   (P1_EVENT | P2_STORAGE | P3_PROP | P4_UPDATE)
 
 // Property state stored in hash table
 typedef struct {
@@ -107,6 +104,7 @@ void prop_db_set_msg_hub(PropDB *db, UMsgTarget *msg_hub);
 void prop_db_transact_begin(PropDB *db);
 void prop_db_transact_end(PropDB *db);
 void prop_db_transact_end_no_update(PropDB *db);
+static inline bool prop_db_update_pending(PropDB *db) { return db->persist_updated; };
 
 // ******************** Retrieval ********************
 bool prop_set(PropDB *db, uint32_t prop, PropDBEntry *value, uint32_t source);
