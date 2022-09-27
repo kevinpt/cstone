@@ -23,6 +23,7 @@ bool str_to_bool(const char *value);
 size_t str_to_upper(char *str);
 size_t str_to_lower(char *str);
 bool str_ends_with(const char *str, const char *suffix);
+int str_split(char *str, const char *delims, char *fields[], int fields_max);
 
 #ifdef __cplusplus
 }

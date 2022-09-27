@@ -175,3 +175,33 @@ bool str_ends_with(const char *str, const char *suffix) {
   return !memcmp(str, suffix, suffix_len);
 }
 
+
+/*
+Split a string by delimiters
+
+The input string is destructively modified by inserting NUL chars.
+
+Args:
+  str: String to split
+  delims: String of delimiter characters to split on
+  fields: Array for split result
+  fields_max: Number of elemends in fields
+
+Returns:
+  Number of fields split
+*/
+int str_split(char *str, const char *delims, char *fields[], int fields_max) {
+  char *save_state;
+  int fields_count = 0;
+
+  memset(fields, 0, fields_max * sizeof(char *));
+
+  char *tok = strtok_r(str, delims, &save_state);
+  while(tok && fields_count < fields_max) {
+    fields[fields_count++] = tok;
+    tok = strtok_r(NULL, delims, &save_state);
+  }
+
+  return fields_count;
+}
+
