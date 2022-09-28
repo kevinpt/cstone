@@ -275,36 +275,44 @@ static int32_t cmd_debug(uint8_t argc, char *argv[], void *eval_ctx) {
 }
 
 
-static int32_t cmd_elog(uint8_t argc, char *argv[], void *eval_ctx) {
+static int32_t cmd_error(uint8_t argc, char *argv[], void *eval_ctx) {
   // Manage error log
   GetoptState state = {0};
   state.report_errors = true;
 
   int c;
-  bool read = false;
   bool clear = false;
   bool dump = false;
   bool mount = false;
+  bool gen_error = false;
+  static unsigned error_count = 0;
 
   static const struct option long_options[] = {
     {"clear",  no_argument, NULL, 'c'},
-    {"read",    no_argument, NULL, 'r'},
-    {"dump",    no_argument, NULL, 'd'},
-    {"mount",   no_argument, NULL, 'm'},
+    {"dump",   no_argument, NULL, 'd'},
+    {"mount",  no_argument, NULL, 'm'},
+    {"gen",    no_argument, NULL, 'g'},
     {0}
   };
 
-  while((c = getopt_long_r(argv, "crdm", long_options, &state)) != -1) {
+  while((c = getopt_long_r(argv, "cdmgh", long_options, &state)) != -1) {
     switch(c) {
     case 'c':
       clear = true; break;
-    case 'r':
-      read = true; break;
     case 'd':
       dump = true; break;
     case 'm':
       mount = true; break;
-
+    case 'g':
+      gen_error = true; break;
+    case 'h':
+      puts("ERRor [-c] [-d] [-m] [-g]");
+      puts("  -c  clear");
+      puts("  -d  dump");
+      puts("  -m  mount");
+      puts("  -g  generate");
+      return 0;
+      break;
     default:
     case ':':
     case '?':
@@ -314,17 +322,19 @@ static int32_t cmd_elog(uint8_t argc, char *argv[], void *eval_ctx) {
   }
 
   if(mount) {
-    DPUTS("Mount elog");
-    errlog_mount(&g_error_log); // FIXME: Mount creates 0.0.0.0 error
+    puts("Mount error log");
+    errlog_mount(&g_error_log);
     return 0;
 
   } else if(clear) {
+    puts("Clearing error log");
     errlog_format(&g_error_log);
     return 0;
 
-  } else if(read) { // FIXME: Make this work again
-    //errlog_dump_record(&g_error_log);
-    return 0; // Can't dump while printing read data
+  } else if (gen_error) {
+    report_error(P1_ERROR | P2_CON | P3_LOCAL | P3_ARR(error_count), error_count);
+    error_count++;
+    return 0;
   }
 
 
@@ -332,48 +342,6 @@ static int32_t cmd_elog(uint8_t argc, char *argv[], void *eval_ctx) {
 
   if(dump)
     errlog_dump_raw(&g_error_log, errlog_size(&g_error_log), 0);
-
-  return 0;
-}
-
-
-static int32_t cmd_error(uint8_t argc, char *argv[], void *eval_ctx) {
-  static unsigned error_count = 0;
-#if 0
-  GetoptState state = {0};
-  state.report_errors = true;
-
-  int c;
-  bool do_fatal_error = false;
-
-  while((c = getopt_r(argv, "fh", &state)) != -1) {
-    switch(c) {
-    case 'f':
-      do_fatal_error = true;
-      break;
-
-    case 'h':
-      puts("error [-f] [-h]");
-      return 0;
-      break;
-
-    default:
-    case ':':
-    case '?':
-      return -3;
-      break;
-    }
-  }
-
-#endif
-//  if(do_fatal_error) {
-//    puts("Fatal error shutdown");
-//    fatal_error();
-
-//  } else {  // Send test error
-    report_error(P1_ERROR | P2_CON | P3_LOCAL | P3_ARR(error_count), error_count);
-    error_count++;
-//  }
 
   return 0;
 }
@@ -851,8 +819,7 @@ const ConsoleCommandDef g_core_cmd_set[] = {
   CMD_DEF("clear",    cmd_clear,      "Clear screen"),
   CMD_DEF("date",     cmd_date,       "Date and time"),
   CMD_DEF("debug",    cmd_debug,      "Config debug modes"),
-  CMD_DEF("elog",     cmd_elog,       "Dump error log"),
-  CMD_DEF("error",    cmd_error,      "Test error"),
+  CMD_DEF("ERRor",    cmd_error,      "Error log"),
 #ifndef PLATFORM_EMBEDDED
   CMD_DEF("exit",     cmd_exit,       "Terminate shell"),
 #endif

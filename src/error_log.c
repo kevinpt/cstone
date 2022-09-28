@@ -125,7 +125,9 @@ static ptrdiff_t find_tail_sector(ErrorLog *el) {
     next_sector = (next_sector+1) % el->storage.num_sectors;
   }
 
-  return -1;
+  // If no other occupied sector is found the tail must be the same
+  // as the head sector.
+  return head_sector;
 }
 
 
@@ -332,17 +334,19 @@ void errlog_dump_raw(ErrorLog *el, size_t dump_bytes, size_t offset) {
 
 void errlog_print_all(ErrorLog *el) {
   ErrorEntry entry;
-  errlog_read_init(el);
-  bputs("Errors:");
   char buf[64];
   unsigned count = 0;
+
+  errlog_read_init(el);
   while(errlog_read_next(el, &entry)) {
-
-    bprintf("  " PROP_ID ", %s = %" PRIu32 "\n", entry.id, prop_get_name(entry.id, buf, sizeof(buf)),
-           entry.data);
-
     count++;
   }
-  bprintf("  Total: %u\n", count);
+  bprintf("Error log (%d entries):\n", count);
+
+  errlog_read_init(el);
+  while(errlog_read_next(el, &entry)) {
+    bprintf("  " PROP_ID "  %s = %" PRIu32 "\n", entry.id, prop_get_name(entry.id, buf, sizeof(buf)),
+           entry.data);
+  }
 }
 
