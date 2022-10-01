@@ -10,7 +10,7 @@
 #include "cstone/prop_id.h"
 #include "cstone/umsg.h"
 
-// FIXME: Make configurable
+// Use small table CRC implementation for reduced memory consumption
 #define crc16_update_block(crc, data, len)  crc16_update_small_block((crc), (data), (len))
 
 
