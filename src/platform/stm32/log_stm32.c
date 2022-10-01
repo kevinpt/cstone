@@ -18,32 +18,6 @@
 
 // ******************** Log DB STM32 flash callbacks ********************
 
-// FIXME: Move this out of cstone to app code
-#if defined STM32F429xx
-static uint32_t flash_sector_index(uint8_t *addr) {
-  uint32_t flash_offset = (uint32_t)addr - 0x8000000ul;
-
-  if(flash_offset < 0x100000ul) { // Bank 1
-    if(flash_offset < 0x10000ul) {  // 16K (0-3)
-      return flash_offset / (16 * 1024);
-    } else if(flash_offset < 0x20000ul) { // 64K (4)
-      return FLASH_SECTOR_4;
-    } else {  // 128K (5-11)
-      return FLASH_SECTOR_4 + flash_offset / (128 * 1024);
-    }
-
-  } else {  // Bank 2
-    flash_offset -= 0x100000ul;
-    if(flash_offset < 0x10000ul) {  // 16K (12-15)
-      return FLASH_SECTOR_12 + flash_offset / (16 * 1024);
-    } else if(flash_offset < 0x20000ul) { // 64K (16)
-      return FLASH_SECTOR_16;
-    } else {  // 128K (17-23)
-      return FLASH_SECTOR_16 + flash_offset / (128 * 1024);
-    }
-  }
-}
-#endif
 
 void log_stm32_erase_sector(void *ctx, size_t sector_start, size_t sector_size) {
   if(HAL_FLASH_Unlock() != HAL_OK)
