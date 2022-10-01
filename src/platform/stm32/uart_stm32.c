@@ -12,7 +12,7 @@
 #include "FreeRTOS.h"
 
 #include "cstone/io/gpio.h"
-#include "cstone/io/uart_stm32.h"
+#include "cstone/io/uart.h"
 
 
 #ifndef COUNT_OF
@@ -91,7 +91,7 @@ void uart_io_init(void) {}
 
 void uart_init(int id, uint8_t port, uint32_t baud) {
   uart__clk_enable(id);
-  gpio_enable_port(port); // FIXME: Not really necessary
+  gpio_enable_port(port);
 
   // Configure peripheral
   LL_USART_InitTypeDef uart_cfg = {0};
