@@ -9,6 +9,7 @@
 extern "C" {
 #endif
 
+__attribute__((format(printf, 1, 2)))
 int bprintf(const char *fmt, ...);
 int bputs(const char *str);
 int bfputs( const char *str, FILE *stream);
