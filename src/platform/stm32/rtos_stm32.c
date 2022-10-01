@@ -41,27 +41,21 @@ uint32_t perf_timer_count(void) {
 // Initialize free running timer with 100us resolution for run time stats
 void perf_timer_init(void) {
 #if defined PLATFORM_STM32F4
-  TIM_HandleTypeDef perf_timer = {0};
-
   PERF_TIMER_CLK_ENABLE();
 
-  // FIXME: Convert to LL API
-
-  // Base clock is HCLK/2
+  // TIM2 is on APB1 @ 45MHz with /4 prescaler. Timer clock is 2x @ 90MHz (180MHz / 2)
   uint16_t prescaler = (uint32_t) ((SystemCoreClock / 2) / PERF_CLOCK_HZ) - 1;
 
-  perf_timer.Instance               = PERF_TIMER;
-  perf_timer.Init.Period            = 0xFFFFFFFF;
-  perf_timer.Init.Prescaler         = prescaler;
-  perf_timer.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
-  perf_timer.Init.CounterMode       = TIM_COUNTERMODE_UP;
-  perf_timer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if(HAL_TIM_Base_Init(&perf_timer) != HAL_OK)
-    return;
+  LL_TIM_InitTypeDef tim_cfg;
 
-  // Free running 32-bit timer with no interrupts
+  LL_TIM_StructInit(&tim_cfg);
+  tim_cfg.Autoreload    = 0xFFFFFFFF;
+  tim_cfg.Prescaler     = prescaler;
+
   LL_TIM_SetCounter(PERF_TIMER, 0);
-  HAL_TIM_Base_Start(&perf_timer);
+  LL_TIM_Init(PERF_TIMER, &tim_cfg);
+  LL_TIM_EnableCounter(PERF_TIMER);
+
 
 #elif defined PLATFORM_STM32F1
   // STM32F1 only has 16-bit timers. We chain two together to get a 32-bit count
