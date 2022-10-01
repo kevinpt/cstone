@@ -13,6 +13,7 @@
 
 #include "FreeRTOS.h"
 #include "semphr.h"
+#include "task.h"
 #include "cstone/console.h"
 
 #include "cstone/prop_id.h"
@@ -184,6 +185,20 @@ static int32_t cmd_date(uint8_t argc, char *argv[], void *eval_ctx) {
   char buf[32];
   format_time(now, buf, sizeof buf);
   puts(buf);
+
+#if 0
+  // Test timer short term accuracy
+  uint32_t millisec[2];
+  uint32_t microsec[2];
+  millisec[0] = millis();
+  microsec[0] = micros();
+  vTaskDelay(pdMS_TO_TICKS(1000));
+  millisec[1] = millis();
+  microsec[1] = micros();
+  time_t now2 = rtc_get_time(rtc_sys_device());
+  DPRINT("Elapsed: RTC=%lu  millis=%lu  micros=%lu", (uint32_t)(now2-now), millisec[1]-millisec[0],
+          microsec[1]-microsec[0]);
+#endif
 
   return 0;
 }
