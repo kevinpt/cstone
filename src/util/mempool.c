@@ -36,6 +36,7 @@ DEALINGS IN THE SOFTWARE.
 #include "list_ops.h"
 
 #include "range_strings.h"
+#include "num_format.h"
 #include "intmath.h"
 #include "mempool.h"
 
@@ -909,77 +910,6 @@ Returns:
 */
 bool mp_pool_in_use(mpPool *pool) {
   return mp_total_free_elements(pool) != mp_total_elements(pool);
-}
-
-// FIXME: Relocate to new library
-// Formatting options for to_si_value():
-#define SIF_POW2            0x01  // Scale values by 1024 rather than 1000
-#define SIF_SIMPLIFY        0x02  // Remove fraction from larger values
-#define SIF_ROUND_TO_CEIL   0x04  // Rounding mode for SIF_SIMPLIFY
-#define SIF_TIGHT_UNITS     0x08  // No space between value and prefix
-#define SIF_NO_ALIGN_UNITS  0x10  // Skip extra space when there is no prefix
-#define SIF_GREEK_MICRO     0x20  // Use UTF-8 µ for micro- prefix
-#define SIF_UPPER_CASE_K    0x40  // Use Upper case for kilo- prefix
-
-/*
-Format a number into a string with SI prefix for exponent
-
-Args:
-  value:        Integer value to format
-  value_exp:    Base-10 exponent for value
-  buf:          Destination buffer
-  buf_size:     Size of buf
-  frac_places:  Number of fractional decimal places in output, -1 for max precision
-  options:      Formatting option flags
-
-Returns:
-  buf pointer
-*/
-static char *to_si_value(long value, int value_exp, char *buf, size_t buf_size, short frac_places,
-                        unsigned short options) {
-  char si_prefix;
-
-  // Convert exponent to scaling
-  unsigned fp_scale = 1;
-  for(int i = 0; i < frac_places; i++) {
-    fp_scale *= 10;
-  }
-
-  long scaled_v   = to_fixed_si(value, value_exp, fp_scale, &si_prefix, options & SIF_POW2);
-  bool negative   = scaled_v < 0;
-  unsigned long scaled_v_abs = negative ? -scaled_v : scaled_v;
-
-  // Remove fraction if integer portion >= 10 when there is a prefix
-  if((options & SIF_SIMPLIFY) && scaled_v_abs >= 10 * fp_scale && si_prefix != '\0') {
-    scaled_v_abs += (options & SIF_ROUND_TO_CEIL) ? fp_scale : fp_scale/2;  // Round up
-    scaled_v_abs = (scaled_v_abs / fp_scale) * fp_scale;
-  }
-  scaled_v = negative ? -scaled_v_abs : scaled_v_abs;
-
-  AppendRange rng;
-  range_init(&rng, buf, buf_size);
-
-  if((scaled_v_abs / fp_scale) * fp_scale == scaled_v_abs)  // No fractional part
-    frac_places = 0;
-
-  // Format fixed point into string
-  range_cat_fixed(&rng, scaled_v, fp_scale, frac_places);
-  if(!(options & SIF_TIGHT_UNITS))
-    range_cat_char(&rng, ' ');
-
-  if(si_prefix != '\0') {
-    if(si_prefix == 'u' && (options & SIF_GREEK_MICRO))
-      range_cat_str(&rng, u8"\u00b5"); // µ
-    else {
-      if(si_prefix == 'k' && (options & SIF_UPPER_CASE_K))
-        si_prefix = 'K';
-      range_cat_char(&rng, si_prefix);
-    }
-  } else if(!(options & SIF_NO_ALIGN_UNITS)) {
-    range_cat_char(&rng, ' ');  // Add space in place of prefix so unit symbols stay aligned
-  }
-
-  return buf;
 }
 
 
