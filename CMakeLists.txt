@@ -29,11 +29,13 @@ set(CSTONE_SOURCE_COMMON
     src/cmds_core.c
     src/rtc_device.c
     src/rtc_soft.c
+    src/dump_reg.c
     src/util/histogram.c
     src/util/bsd_string.c
     src/util/search.c
     src/util/dhash.c
     src/util/range_strings.c
+    src/util/num_format.c
     src/util/getopt_r.c
     src/util/mempool.c
     src/util/crc8.c
