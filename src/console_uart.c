@@ -6,7 +6,7 @@
 
 #include "cstone/console.h"
 
-#include "cstone/io/uart_stm32.h"  // FIXME: Change to generic uart header
+#include "cstone/io/uart.h"
 #include "cstone/console_uart.h"
 
 
