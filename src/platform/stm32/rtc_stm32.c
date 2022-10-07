@@ -13,15 +13,7 @@
 #include "cstone/debug.h"
 #include "util/crc8.h"
 
-#define RTC_LSE_CLK   32768
-#define RTC_LSI_CLK   32000
-
-#define USE_LSI_CLK
-#ifndef USE_LSI_CLK
-#  define RTC_CLK       RTC_LSE_CLK
-#else
-#  define RTC_CLK       RTC_LSI_CLK
-#endif
+static uint32_t s_rtc_clk_freq = 32768;
 
 
 static void disable_rtc_write_protect(void) {
@@ -193,7 +185,7 @@ static bool rtc__stm32_calibrate(RTCDevice *rtc, int cal_error, RTCCalibrateOp c
   // Calculate new correction value
   int32_t elapsed = (int32_t)(now - init_time);
 //  int32_t err_ppm = ((int32_t)cal_error * CAL_CYCLE) / elapsed;
-//  int32_t err_freq = ((RTC_CLK * err_ppm + CAL_CYCLE/2) / CAL_CYCLE);
+//  int32_t err_freq = ((s_rtc_clk_freq * err_ppm + CAL_CYCLE/2) / CAL_CYCLE);
 
   /* STM32F4 RTC can suppress up to 511 clock cycles using the CALM field. It can also
      inject 512 extra clock cycles when CALP is enabled. This permits adjustment of
@@ -210,7 +202,7 @@ static bool rtc__stm32_calibrate(RTCDevice *rtc, int cal_error, RTCCalibrateOp c
     old_calm = old_calm - 512;
 
 #define CAL_CYCLE   (1L << 20)  // 2^20 pulses  ≈ 1M
-  //int32_t calm = (CAL_CYCLE * err_freq) / RTC_CLK;  // Number of cycles to add or remove
+  //int32_t calm = (CAL_CYCLE * err_freq) / s_rtc_clk_freq;  // Number of cycles to add or remove
   int32_t calm = (CAL_CYCLE * cal_error) / elapsed;  // Number of cycles to add or remove
   calm += old_calm; // Incorporate existing cal offset
 
@@ -224,8 +216,8 @@ static bool rtc__stm32_calibrate(RTCDevice *rtc, int cal_error, RTCCalibrateOp c
     printf("\tLast cal: %s\n", buf);
     format_time(now, buf, sizeof buf);
     printf("\tNow:      %s\n", buf);
-    int32_t err_cycles = (RTC_CLK * cal_error) / elapsed;
-    printf("\tElapsed=%ld,  Err. cycles=%ld,  Eff. freq=%ld\n", elapsed, err_cycles, RTC_CLK + err_cycles);
+    int32_t err_cycles = (s_rtc_clk_freq * cal_error) / elapsed;
+    printf("\tElapsed=%ld,  Err. cycles=%ld,  Eff. freq=%ld\n", elapsed, err_cycles, s_rtc_clk_freq + err_cycles);
     printf("\tOld CALM=%ld, New CALM=%ld" A_NONE "\n", old_calm, calm);
   }
 
@@ -265,7 +257,9 @@ static bool rtc__stm32_calibrate(RTCDevice *rtc, int cal_error, RTCCalibrateOp c
 }
 
 
-bool rtc_stm32_init(RTCDevice *rtc) {
+
+
+bool rtc_stm32_init(RTCDevice *rtc, int rtc_clk_source, uint32_t rtc_clk_freq) {
   rtc->set_time   = rtc__stm32_set_time;
   rtc->get_time   = rtc__stm32_get_time;
   rtc->valid_time = rtc__stm32_valid_time;
@@ -275,39 +269,50 @@ bool rtc_stm32_init(RTCDevice *rtc) {
   LL_PWR_EnableBkUpAccess();
   LL_PWR_EnableBkUpAccess();
 
-//  LL_RCC_ForceBackupDomainReset();
-//  LL_RCC_ReleaseBackupDomainReset();
-
-#ifdef USE_LSI_CLK
-  __HAL_RCC_LSI_ENABLE();
-  while(!LL_RCC_LSI_IsReady());
-#else
-  LL_RCC_LSE_EnableBypass(); // External oscillator
-  LL_RCC_LSE_Enable();
-
-  while(!LL_RCC_LSE_IsReady());
+#if 0
+  // Only enable this for testing. It wipes the RTC time.
+  // This is used to let LL_RCC_SetRTCClockSource() work without needing a power cycle.
+  LL_RCC_ForceBackupDomainReset();
+  LL_RCC_ReleaseBackupDomainReset();
 #endif
 
-#ifdef USE_LSI_CLK
-  LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_LSI);
-#else
-  LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_LSE);
-#endif
+  switch(rtc_clk_source) {
+  default:
+  case RTC_CLK_INTERN:
+    __HAL_RCC_LSI_ENABLE();
+
+    while(!LL_RCC_LSI_IsReady());
+    LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_LSI);
+    break;
+
+  case RTC_CLK_EXTERN_OSC:
+    LL_RCC_LSE_EnableBypass();
+    __attribute__((fallthrough));
+
+  case RTC_CLK_EXTERN_XTAL:
+    LL_RCC_LSE_Enable();
+
+    while(!LL_RCC_LSE_IsReady());
+    LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_LSE);
+    break;
+  }
 
   LL_RCC_EnableRTC();
 
-#if 1
-  // Only initialize the RTC if it isn't already running. This prevents 
+  s_rtc_clk_freq = rtc_clk_freq;
+
+  // Only initialize the RTC if it isn't already running. This prevents skipping cycles
+  // caused by the init operation.
   if(!LL_RTC_IsActiveFlag_INITS(RTC)) {
     LL_RTC_InitTypeDef cfg = {
       .HourFormat       = LL_RTC_HOURFORMAT_24HOUR,
       .AsynchPrescaler  = 128-1, // Subseconds tick ~256Hz
-      .SynchPrescaler   = (RTC_CLK / 128)-1
+      .SynchPrescaler   = (rtc_clk_freq / 128)-1
     };
 
     LL_RTC_Init(RTC, &cfg);
   }
-#endif
+
   return true;
 }
 

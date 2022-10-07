@@ -8,13 +8,16 @@
 
 #if defined PLATFORM_STM32F1
 #  include "stm32f1xx_ll_tim.h"
+#  include "stm32f1xx_ll_rcc.h"
 #else
 #  include "stm32f4xx_ll_tim.h"
+#  include "stm32f4xx_ll_rcc.h"
 #endif
 
 #include "FreeRTOS.h"
 #include "timers.h"
 
+#include "cstone/core_stm32.h"
 #include "cstone/rtos.h"
 
 
@@ -43,8 +46,8 @@ void perf_timer_init(void) {
 #if defined PLATFORM_STM32F4
   PERF_TIMER_CLK_ENABLE();
 
-  // TIM2 is on APB1 @ 45MHz with /4 prescaler. Timer clock is 2x @ 90MHz (180MHz / 2)
-  uint16_t prescaler = (uint32_t) ((SystemCoreClock / 2) / PERF_CLOCK_HZ) - 1;
+  uint32_t timer_clk = timer_clock_rate(PERF_TIMER);
+  uint16_t prescaler = (timer_clk / PERF_CLOCK_HZ) - 1;
 
   LL_TIM_InitTypeDef tim_cfg;
 
@@ -65,9 +68,9 @@ void perf_timer_init(void) {
   // **** Configure timer for low 16-bits ****
   PERF_TIMER_CLK_ENABLE();
 
-  // Base clock is HCLK
-  // Timer TIM2 is on APB1 @ 36MHz
-  uint16_t prescaler = (uint32_t) ((SystemCoreClock / 1) / PERF_CLOCK_HZ) - 1;
+  uint32_t timer_clk = timer_clock_rate(PERF_TIMER);
+  uint16_t prescaler = (timer_clk / PERF_CLOCK_HZ) - 1;
+
 
   LL_TIM_StructInit(&tim_cfg);
   tim_cfg.Autoreload    = 0xFFFF;
@@ -106,8 +109,8 @@ void perf_timer_init(void) {
   PERF_TIMER_HI_CLK_ENABLE();
 
   LL_TIM_StructInit(&tim_cfg);
-  tim_cfg.Autoreload    = 0xFFFF;
-  tim_cfg.Prescaler = 0;
+  tim_cfg.Autoreload  = 0xFFFF;
+  tim_cfg.Prescaler   = 0;
   LL_TIM_Init(PERF_TIMER_HI, &tim_cfg);
 
   LL_TIM_SetTriggerInput(PERF_TIMER_HI, LL_TIM_TS_ITR1); // Trigger from TIM2 (Table 82 in RM0008)

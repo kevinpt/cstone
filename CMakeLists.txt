@@ -49,6 +49,7 @@ set(CSTONE_SOURCE_COMMON
 )
 
 set(CSTONE_SOURCE_STM32
+    src/platform/stm32/core_stm32.c
     src/platform/stm32/uart_stm32.c
     src/platform/stm32/gpio_stm32.c
     src/platform/stm32/target_stm32.c
