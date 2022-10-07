@@ -28,7 +28,9 @@ typedef struct {
 static const UartResource s_uart_resources[] = {
   {USART1, USART1_IRQn},
   {USART2, USART2_IRQn},
+#ifdef USART3
   {USART3, USART3_IRQn},
+#endif
 #ifdef UART4
   {UART4,  UART4_IRQn},
 #endif
@@ -65,7 +67,9 @@ static void uart__clk_enable(int id) {
   default:
   case 1: __HAL_RCC_USART1_CLK_ENABLE(); break;
   case 2: __HAL_RCC_USART2_CLK_ENABLE(); break;
+#ifdef USART3
   case 3: __HAL_RCC_USART3_CLK_ENABLE(); break;
+#endif
 #ifdef UART4
   case 4: __HAL_RCC_UART4_CLK_ENABLE(); break;
 #endif

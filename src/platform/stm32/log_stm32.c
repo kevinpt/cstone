@@ -32,7 +32,7 @@ void log_stm32_erase_sector(void *ctx, size_t sector_start, size_t sector_size) 
     .NbPages      = 1,
   };
 
-#else
+#elif defined BOARD_STM32F429I_DISC1
   uint32_t sector = flash_sector_index((uint8_t *)ctx + sector_start);
 //  printf("## ERASE sector 0x%08X  %lu...\n", (uintptr_t)sector_start, sector);
 
@@ -43,6 +43,19 @@ void log_stm32_erase_sector(void *ctx, size_t sector_start, size_t sector_size) 
     .NbSectors    = 1,
     .VoltageRange = FLASH_VOLTAGE_RANGE_3 // 2.7V - 3.6V (No Vpp)
   };
+#elif defined BOARD_STM32F401_BLACK_PILL
+  uint32_t sector = flash_sector_index((uint8_t *)ctx + sector_start);
+//  printf("## ERASE sector 0x%08X  %lu...\n", (uintptr_t)sector_start, sector);
+  // STM32F401 Sectors 0-3 = 16K, 4 = 64K, 5-7 = 128K
+  FLASH_EraseInitTypeDef erase = {
+    .TypeErase    = FLASH_TYPEERASE_SECTORS,
+    .Banks        = FLASH_BANK_1,
+    .Sector       = sector,
+    .NbSectors    = 1,
+    .VoltageRange = FLASH_VOLTAGE_RANGE_3 // 2.7V - 3.6V (No Vpp)
+  };
+#else
+#  error "Unknown device for flash layout"
 #endif
 
   uint32_t error;
