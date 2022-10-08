@@ -66,6 +66,10 @@ size_t heap_os_free(void);
 size_t heap_os_min_free(void);
 size_t heap_os_allocated_objs(void);
 
+void sys_stack_fill(void);
+size_t sys_stack_size(void);
+size_t sys_stack_min_free(void);
+
 #ifdef __cplusplus
 }
 #endif

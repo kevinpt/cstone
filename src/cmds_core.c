@@ -37,6 +37,7 @@
 #include "util/getopt_r.h"
 #include "util/string_ops.h"
 #include "util/range_strings.h"
+#include "util/num_format.h"
 #include "bsd/string.h"
 
 
@@ -448,26 +449,34 @@ static int32_t cmd_free(uint8_t argc, char *argv[], void *eval_ctx) {
   }
 
   if(!show_hist) {
-    puts("FreeRTOS heap:");
+
+    char buf[8];
+#define TO_SI(v)  to_si_value((v), 0, buf, sizeof buf, 1, SIF_SIMPLIFY | SIF_POW2 | SIF_UPPER_CASE_K)
 
     size_t heap_size = heap_os_size();
     size_t heap_free = heap_os_free();
     size_t heap_min_free = heap_os_min_free();
 
-    printf("\tTotal:   %3" PRIuz " KB\n", heap_size / 1024);
-    printf("\tUsed:    %3" PRIuz " KB", (heap_size - heap_free) / 1024);
-    printf("\t\t\tObjects: %" PRIuz "\n",  heap_os_allocated_objs());
-    printf("\tFree:    %3" PRIuz " KB (Min %" PRIuz " KB)\n", heap_free / 1024, heap_min_free / 1024);
-
-
-    bputs("\nC heap:");
+    puts("FreeRTOS heap:");
+    printf("\tTotal:  %6sB\n", TO_SI(heap_size));
+    printf("\tUsed:   %6sB ", TO_SI(heap_size - heap_free));
+    printf("\t\tObjects: %" PRIuz "\n",  heap_os_allocated_objs());
+    printf("\tFree:   %6sB", TO_SI(heap_free));
+    printf(" (Min %sB)\n", TO_SI(heap_min_free));
 
     heap_size = heap_c_lib_size();
     heap_free = heap_c_lib_free();
+    bputs("\nC heap:");
+    printf("\tTotal:  %6sB\n", TO_SI(heap_size));
+    printf("\tUsed:   %6sB\n", TO_SI(heap_size - heap_free));
+    printf("\tFree:   %6sB\n", TO_SI(heap_free));
 
-    printf("\tTotal:   %3" PRIuz " KB\n", heap_size / 1024);
-    printf("\tUsed:    %3" PRIuz " KB\n", (heap_size - heap_free) / 1024);
-    printf("\tFree:    %3" PRIuz " KB\n", heap_free / 1024);
+    size_t stack_size = sys_stack_size();
+    size_t stack_free = sys_stack_min_free();
+    bputs("\nSys. stack:");
+    printf("\tTotal:  %6sB\n", TO_SI(stack_size));
+    printf("\tUsed:   %6sB\n", TO_SI(stack_size - stack_free));
+    printf("\tFree:   %6sB\n", TO_SI(stack_free));
 
     bputs("\n--= Memory pools =--");
     mp_summary(&g_pool_set);

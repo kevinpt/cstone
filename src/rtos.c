@@ -269,3 +269,42 @@ size_t heap_os_allocated_objs(void) {
 
   return stats.xNumberOfSuccessfulAllocations - stats.xNumberOfSuccessfulFrees;
 }
+
+
+// Linker symbols
+extern uint32_t _estack;
+extern uint32_t _reserved_stack_size;
+
+size_t sys_stack_size(void) {
+  return (uint32_t)&_reserved_stack_size;
+}
+
+
+#define STACK_SENTINEL 0xDEADBEEF
+
+// This should be called early in main() and it must not be called from an RTOS task
+void sys_stack_fill(void) {
+  uint32_t *end_stack = &_estack;
+  uint32_t *start_stack = end_stack - sys_stack_size();
+  end_stack = (uint32_t *)__get_MSP();
+  uint32_t *top_stack = start_stack;
+
+  while(top_stack < end_stack) {
+    *top_stack++ = STACK_SENTINEL;
+  }
+
+}
+
+size_t sys_stack_min_free(void) {
+  uint32_t *end_stack = &_estack;
+  uint32_t *start_stack = end_stack - sys_stack_size();
+  uint32_t *top_stack = start_stack;
+
+  while(*top_stack == STACK_SENTINEL) {
+    if(++top_stack >= end_stack)
+      break;
+  }
+
+  return top_stack - start_stack;
+}
+
