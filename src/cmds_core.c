@@ -785,11 +785,11 @@ static int32_t cmd_tasks(uint8_t argc, char *argv[], void *eval_ctx) {
   num_tasks = uxTaskGetSystemState(tasks, num_tasks, &run_time);
 
   printf("%lu tasks:\n", num_tasks);
-  puts(A_YLW "     Name    State  Prio  Stack  Run");
+  puts(A_YLW "     Name    State  Prio  Stack   Run");
 #if 0
-  puts(      "  -------------------------------------" A_NONE);
+  puts(      "  ---------------------------------------" A_NONE);
 #else
-  puts(    u8"  ─────────────────────────────────────" A_NONE);
+  puts(    u8"  ───────────────────────────────────────" A_NONE);
 #endif
 
   for(UBaseType_t i = 0; i < num_tasks; i++) {
@@ -804,9 +804,11 @@ static int32_t cmd_tasks(uint8_t argc, char *argv[], void *eval_ctx) {
     }
 
     task_time = ticks_to_si_time(tasks[i].ulRunTimeCounter, &unit);
-    bprintf("  %-10s   %c    %2lu    %4" PRIu32 "  %3lu %s\n", tasks[i].pcTaskName, state,
-            tasks[i].uxCurrentPriority, (uint32_t)(tasks[i].usStackHighWaterMark * sizeof(StackType_t)),
-            task_time, unit);
+    char buf[8];
+    size_t min_stack = tasks[i].usStackHighWaterMark * sizeof(StackType_t);
+
+    bprintf("  %-10s   %c    %2lu   %6sB  %3lu %s\n", tasks[i].pcTaskName, state,
+            tasks[i].uxCurrentPriority, TO_SI(min_stack), task_time, unit);
   }
 
   bprintf("\n  Avg. load: %" PRIu32 "%%\n", 100 - ulTaskGetIdleRunTimePercent());
