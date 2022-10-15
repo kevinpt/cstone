@@ -65,7 +65,7 @@ This logic reverses if the array is sorted in descending order.
 /*
 Search an array for an exact matching item
 
-Ths is similar to bsearch() but the compare_near() callback returns the magnitude
+This is similar to bsearch() but the compare_near() callback returns the magnitude
 of difference between key and a candidate element. The callback returns the signed
 difference between compared keys that indicates how close they are to each other
 by any measure the caller wishes to use.
@@ -170,7 +170,7 @@ size_t search_nearest(const void *key, const void *base, size_t num, size_t item
 /*
 Search an array for the nearest item greater than or equal to the key
 
-Ths is similar to bsearch() but the compare_near() callback returns the magnitude of
+This is similar to bsearch() but the compare_near() callback returns the magnitude of
 difference between key and a candidate element.
 
 If the search key is more than the largest item then the returned nearest index will
@@ -202,7 +202,7 @@ size_t search_nearest_above(const void *key, const void *base, size_t num, size_
 /*
 Search an array for the nearest item less than or equal to the key
 
-Ths is similar to bsearch() but the compare_near() callback returns the magnitude of
+This is similar to bsearch() but the compare_near() callback returns the magnitude of
 difference between key and a candidate element.
 
 If the search key is less than the smallest item then the returned nearest index will

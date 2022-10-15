@@ -265,7 +265,7 @@ void random_bytes(RandomState *state, uint8_t *dest, size_t dest_size) {
 Generate an array of cumulative weights
 
 This converts an array or independent weights into a cumulative distribution for
-use by :c:func`random_weighted_choice`.
+use by :c:func:`random_weighted_choice`.
 
 Args:
   state:        PRNG state
