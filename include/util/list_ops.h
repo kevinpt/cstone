@@ -92,7 +92,7 @@ static inline bool ll__slist_remove(NodeSList **head, NodeSList *node) {
   return true;
 }
 
-#define  ll_slist_remove_after(before, node) ll__slist_remove_after((NodeSList *)before)
+#define  ll_slist_remove_after(before) ll__slist_remove_after((NodeSList *)before)
 static inline  NodeSList *ll__slist_remove_after(NodeSList *before) {
   NodeSList *node = before->next;
   if(node) {

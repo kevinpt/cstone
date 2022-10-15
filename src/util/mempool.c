@@ -106,8 +106,8 @@ static inline void mp__unlink(mpPoolSet *pool_set, mpPool *pool) {
 }
 
 // Unlink a pool from its predecessor
-static inline void mp__unlink_from_prev(mpPool *prev, mpPool *pool) {
-  ll_slist_remove_after(prev, pool);
+static inline void mp__unlink_from_prev(mpPool *prev) {
+  ll_slist_remove_after(prev);
 }
 
 
@@ -199,7 +199,7 @@ bool mp_release_pool_set(mpPoolSet *pool_set, bool release_in_use) {
 
         // Unlink this pool
         if(prev) {
-          mp__unlink_from_prev(prev, cur);
+          mp__unlink_from_prev(prev);
         } else { // Head of list
           mp__unlink(pool_set, cur);
         }
