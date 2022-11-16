@@ -16,6 +16,7 @@
 #include "semphr.h"
 #include "cstone/console.h"
 #include "cstone/term_color.h"
+#include "cstone/blocking_io.h"
 
 
 
@@ -339,13 +340,13 @@ static int32_t cmd_port(uint8_t argc, char *argv[], void *eval_ctx) {
 #if defined PLATFORM_STM32F4
 // STM32F4 has multiple alternate functions per pin so we list the mapping here
   if(has_alt) {
-    puts(A_BLU "Alt modes:" A_NONE);
+    bputs(A_BLU "Alt modes:" A_NONE);
     for(i = 30, m2 = 0xC0000000; m2 > 0; i-=2, m2 >>= 2) {
       int mode = (port->MODER & m2) >> i;
       if(mode == LL_GPIO_MODE_ALTERNATE) {
         int af_ix = i/2;
         int af = (port->AFR[af_ix/8] >> (af_ix%8 * 4)) & 0x0F;
-        printf(A_YLW "  %2d" A_NONE ": " A_BLU "AF%d" A_NONE "\n", af_ix, af);
+        bprintf(A_YLW "  %2d" A_NONE ": " A_BLU "AF%d" A_NONE "\n", af_ix, af);
       }
     }
   }
