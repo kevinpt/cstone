@@ -128,10 +128,16 @@ static void event_monitor_task(void *ctx) {
 #ifdef USE_LOAD_MONITOR
 
 static Histogram *s_load_hist;
+static uint32_t s_sys_load = 0;
 
 void plot_load_stats(void) {
   puts("  System load %:");
   histogram_plot(s_load_hist, 50);
+}
+
+
+uint32_t system_load(void) {
+  return s_sys_load;
 }
 
 
@@ -149,7 +155,7 @@ static void load_monitor_task_cb(TimerHandle_t timer) {
 #endif
 
   // Calculate load in percent
-  uint32_t load = (PERF_CLOCK_HZ - idle_ticks) * 100 / PERF_CLOCK_HZ;
+  s_sys_load = (PERF_CLOCK_HZ - idle_ticks) * 100 / PERF_CLOCK_HZ;
 #if 0
   fputs("## load: ", stdout);
   char buf[10+1];
@@ -158,7 +164,7 @@ static void load_monitor_task_cb(TimerHandle_t timer) {
   puts(buf);
 #endif
 
-  histogram_add_sample(s_load_hist, load);
+  histogram_add_sample(s_load_hist, s_sys_load);
 }
 #endif
 

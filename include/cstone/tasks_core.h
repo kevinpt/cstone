@@ -32,6 +32,7 @@ extern "C" {
 void core_tasks_init(void);
 #ifdef USE_LOAD_MONITOR
 void plot_load_stats(void);
+uint32_t system_load(void);
 #endif
 
 #ifdef __cplusplus

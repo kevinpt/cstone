@@ -811,7 +811,12 @@ static int32_t cmd_tasks(uint8_t argc, char *argv[], void *eval_ctx) {
             tasks[i].uxCurrentPriority, TO_SI(min_stack), task_time, unit);
   }
 
+#ifdef USE_LOAD_MONITOR
+  bprintf("\n  Load: %" PRIu32 "%%\tAvg. load: %" PRIu32 "%%\n", system_load(),
+          100 - ulTaskGetIdleRunTimePercent());
+#else
   bprintf("\n  Avg. load: %" PRIu32 "%%\n", 100 - ulTaskGetIdleRunTimePercent());
+#endif
   free(tasks);
 
 #ifdef USE_LOAD_MONITOR
