@@ -205,3 +205,91 @@ int str_split(char *str, const char *delims, char *fields[], int fields_max) {
   return fields_count;
 }
 
+
+/*
+Convert a decimal number from string to fixed-point
+
+Args:
+  str:      String to convert (Must be NUL terminated)
+  fp_scale: Fixed-point scale factor for result
+  endptr:   Optional pointer for first invalid character in str
+
+Returns:
+  Converted number scaled by fp_scale if found or 0
+*/
+int str_to_fixed(const char *str, unsigned fp_scale, char **endptr) {
+  bool neg = false;
+  int int_val = 0;
+  int frac_val = 0;
+  unsigned b10_scale = 1;
+  unsigned digits = 0;
+
+// Set some crude limits. These don't prevent all cases of overflow. They're just basic
+// protection against pathological input.
+#if INT_MAX >= 0x10000
+#  define MAX_DIGITS        9  // log10(2^31)
+#  define MAX_FRAC_DIGITS   7
+#else // 16-bit int
+#  define MAX_DIGITS        4  // log10(2^15)
+#  define MAX_FRAC_DIGITS   4
+#endif
+
+  // Skip whitespace
+  while(*str) {
+    if(!isspace(*str))
+      break;
+    str++;
+  }
+
+  // Check for sign
+  if(*str == '-') {
+    neg = true;
+    str++;
+  } else if(*str == '+') {
+    str++;
+  }
+
+  // Get integer part
+  while(*str && digits < MAX_DIGITS) {
+    char ch = *str;
+    if(ch >= '0' && ch <= '9') {
+      int_val *= 10;
+      int_val += ch - '0';
+      digits++;
+    } else {
+      break;
+    }
+    str++;
+  }
+
+  // Get fraction part
+  if(*str == '.') {
+    str++;
+    digits = 0;
+    while(*str && digits < MAX_FRAC_DIGITS) {
+      char ch = *str;
+      if(ch >= '0' && ch <= '9') {
+        frac_val *= 10;
+        frac_val += ch - '0';
+        digits++;
+        b10_scale *= 10;
+      } else {
+        break;
+      }
+      str++;
+    }
+  }
+
+  if(endptr)
+    *endptr = (char *)str;
+
+  // Convert to fixed-point
+  if(int_val > 0)
+    int_val *= fp_scale;
+  if(frac_val > 0)
+    int_val += (frac_val * fp_scale) / b10_scale;
+  if(neg) int_val = -int_val;
+
+  return int_val;
+}
+

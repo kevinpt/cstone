@@ -25,6 +25,7 @@ size_t str_to_lower(char *str);
 bool str_ends_with(const char *str, const char *suffix);
 int str_split(char *str, const char *delims, char *fields[], int fields_max);
 
+int str_to_fixed(const char *str, unsigned fp_scale, char **endptr);
 #ifdef __cplusplus
 }
 #endif
