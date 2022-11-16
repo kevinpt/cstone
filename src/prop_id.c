@@ -239,7 +239,7 @@ static bool append_field(AppendRange *rng, int level, uint32_t prop) {
 
   if(prev_array) {  // This is an index
     field >>= 8*(4-level);
-    copied = range_cat_fmt(rng, "%d]", field);
+    copied = range_cat_fmt(rng, "%ld]", field);
     status = copied < 0 || !status ? false : true;
 
     if(level != 4) {
@@ -256,7 +256,7 @@ static bool append_field(AppendRange *rng, int level, uint32_t prop) {
     } else
 #endif
     { // Unknown name
-      copied = range_cat_fmt(rng, "<%d>", PROP_FIELD(field, level));
+      copied = range_cat_fmt(rng, "<%ld>", PROP_FIELD(field, level));
       status = copied < 0 || !status ? false : true;
     }
 
