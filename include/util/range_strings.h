@@ -54,6 +54,7 @@ typedef struct {
 // In a printf() format string use the "%.*s" specifier and use this macro to generate the two arguments
 #define RANGE_FMT(rp) (int)range_size(rp), (rp)->start
 
+#define PRISR   ".*s"
 
 // ******************** Range initialization ********************
 
@@ -77,6 +78,7 @@ int range_copy_str(AppendRange *rng, const char *str, bool truncate);
 
 
 // ******************** Append operations ********************
+__attribute__((format(printf, 2, 3)))
 int range_cat_fmt(AppendRange *rng, const char *fmt, ...);
 
 int range_cat_str(AppendRange *rng, const char *str);

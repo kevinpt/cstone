@@ -47,19 +47,19 @@ repeatedly in a sequence.
 
                    start                        end
                     \/                          \/
-               rng: [f][o][o][b][a][r][\0][ ][ ][ ]
+               rng: [f][o][o][b][a][r][\0][ ][ ]( )
 
-                    range_size(&rng);   --> 10
+                    range_size(&rng);   --> 9
                     range_strlen(&rng); --> 6
 
     It can be a substring within a larger buffer. NUL termination is
     not required.
 
-                            start  end
-                             \/    \/
+                         start  end
+                          \/    \/
                rng: [f][o][o][b][a][r][\0][ ][ ][ ]
 
-                    Range represents substring "bar"
+                    Range represents substring "ob"
 
 
   AppendRange:
@@ -67,14 +67,14 @@ repeatedly in a sequence.
     the start pointer until it reaches the end.
                                      start      end
                                       \/        \/
-               rng: [f][o][o][b][a][r][\0][ ][ ][ ]
+               rng: [f][o][o][b][a][r][\0][ ][ ]( )
 
 
-               range_cat_str(&rng, "baz");
+               range_cat_str(&rng, "bz");
 
-                                           start end
-                                               \/\/
-               rng: [f][o][o][b][a][r][b][a][z][\0]
+                                         start  end
+                                            \/  \/
+               rng: [f][o][o][b][a][r][b][z][\0]( )
 
 
 In any case, a StringRange needs to point into valid memory before it can be
@@ -89,7 +89,7 @@ range_init() macro:
 
   char *str;
   StringRange str_r;
-
+  ...
   range_init(&str_r, str, strlen(str)+1); // You should include existing NUL in new ranges
 
 An alternative initializer macro can be used for arrays:
@@ -98,15 +98,22 @@ An alternative initializer macro can be used for arrays:
   StringRange buf_r = RANGE_FROM_ARRAY(buf);
 
 This utility library does not do any memory management. You are responsible for
-any allocation and release of the memory that backs the StringRange objects.
-The objective is to be a lightweight adjunct to the standard string library.
+allocation and release of the memory that backs the StringRange objects. The
+objective is to be a lightweight adjunct to the standard string library.
 
 StringRange objects consist of only two pointers and can be passed by value if
 desired. They can operate in place of the usual pair of arguments used to pass
 buffer pointers and their length into functions.
 
 The end pointer is best treated as opaque but you can always safely access the
-start pointer to pass the start of the range to code expecting a pointer.
+start pointer to pass the start of the range to code expecting a pointer:
+
+  void string_func(const char *str);
+
+  StringRange str_r;
+  ...
+  range_cat_str(&str_r, "foobar");
+  string_func(str_r.start);
 
 The normal append operations will always terminate the string with NUL so that
 it's always a valid C string. There are also a set of equivalent operations
@@ -124,6 +131,9 @@ without guaranteed NULs:
   StringRange *r;
   printf("String is: '%.*s'\n", RANGE_FMT(r));
 
+You can also use the PRISR format macro:
+
+  printf("String is: '%" PRISR "'\n", RANGE_FMT(r));
 
 Tokenizer functions range_token() and range_token_limit() serve as substitutes
 for strtok_r() with the benefit that the input string is not altered.
