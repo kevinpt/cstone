@@ -24,6 +24,8 @@ DEALINGS IN THE SOFTWARE.
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <assert.h>
 
 #include "intmath.h"
 
@@ -365,7 +367,7 @@ long to_fixed_si(long value, int value_exp, unsigned fp_scale, char *si_prefix, 
 
 
 /*
-Calculate a fixed point squart root from a fixed-point value
+Calculate a fixed-point square root from a fixed-point value
 
 The precision is controlled by the size of the fp_exp scale factor.
 fp_value and the result are in base-2 fixed-point format.
@@ -383,6 +385,8 @@ unsigned long isqrt_fixed(unsigned long fp_value, unsigned fp_exp) {
     https://github.com/chmike/fpsqrt
     https://groups.google.com/forum/?hl=fr%05aacf5997b615c37&fromgroups#!topic/comp.lang.c/IpwKbw0MAxw/discussion
   */
+  assert((fp_exp & 0x01) == 0); // fp_exp must be even
+
 //  const unsigned short total_bits   = 8 * sizeof fp_value;
 #define TOTAL_BITS  (8 * sizeof fp_value)
   const unsigned short integer_bits = TOTAL_BITS - fp_exp;
@@ -422,5 +426,209 @@ unsigned long isqrt_fixed(unsigned long fp_value, unsigned fp_exp) {
   // Remove remaining offset factor and round up
   q = (q >> adj_bits) + (unsigned long)(r > q);
   return q;
+}
+
+
+// Linear interpolate between two points in Q1.15 format. Interpolant is in Q0.16
+static inline int16_t lin_interp(int16_t a0, int16_t a1, uint16_t t) {
+  return a0 + (((int32_t)t * (int32_t)(a1 - a0)) >> 16);
+}
+
+
+/*
+Linear interpolate between two 2D points in fixed-point format
+
+Fixed-point values for p0,p1 represent the interval [-1,1).
+The interpolant is a value in the interval [0,1).
+
+Args:
+  p0: Start point in Q1.15 format
+  p1: End point in Q1.15 format
+  t:  Interpolant in Q0.16 format
+
+Returns:
+  A new point in between p0,p1 proportional to t
+*/
+Point16 interpolate_points(Point16 p0, Point16 p1, uint16_t t) {
+  Point16 interp;
+  interp.x = lin_interp(p0.x, p1.x, t);
+  interp.y = lin_interp(p0.y, p1.y, t);
+
+  return interp;
+}
+
+
+/*
+Evaluate a quadratic polynomial
+
+Fixed-point values for for coefficients represent the interval [-1,1).
+The interpolant is a value int he interval [0,1).
+
+Args:
+  a:  t^2 coefficient
+  b:  t^1 coefficient
+  c:  t^0 coefficient
+  t:  Independent variable in Q0.16 format
+
+Returns:
+  The quadratic polynomial value at point t
+*/
+int16_t quadratic_eval(int16_t a, int16_t b, int16_t c, uint16_t t) {
+  int32_t q;
+
+  q = (int32_t)a - 2*(int32_t)b + (int32_t)c;
+  q = (((q * (int32_t)t) >> 16) * (int32_t)t) >> 16;
+  q += (2*(int32_t)(b - a) * (int32_t)t) >> 16;
+  q += a;
+
+  return (int16_t)q;
+}
+
+
+/*
+Evaluate a quadratic Bezier curve at a given paramatric value
+
+Fixed-point values for p0,p1,p2 represent the interval [-1,1).
+The interpolant t is a value in the interval [0,1).
+
+Args:
+  p0: Start point in Q1.15 format
+  p1: Mid point in Q1.15 format
+  p2: End point in Q1.15 format
+  t:  Interpolant in Q0.16 format
+
+Returns:
+  A new point in on the curve corresponding to t
+*/
+Point16 quadratic_bezier(Point16 p0, Point16 p1, Point16 p2, uint16_t t) {
+#if 0
+  // DeCasteljau algorithm
+  // Note that this is nore numerically stable than the direct eval
+  Point16 q0, q1;
+
+  q0 = interpolate_points(p0, p1, t);
+  q1 = interpolate_points(p1, p2, t);
+  return interpolate_points(q0, q1, t);
+#else
+
+  Point16 r = {
+    .x = quadratic_eval(p0.x, p1.x, p2.x, t),
+    .y = quadratic_eval(p0.y, p1.y, p2.y, t)
+  };
+
+  return r;
+#endif
+
+}
+
+
+/*
+Find the positive root for a quadratic equation
+
+Fixed-point values for a,b,c coefficients in Q17.15 format
+x represents the interval [-1,1) in Q1.15 format
+
+Args:
+  a:  t^2 coefficient
+  b:  t^1 coefficient
+  c:  t^0 coefficient
+  x:  Independent variable on X-axis
+
+Returns:
+  Positive root of the equation
+*/
+uint16_t quadratic_solve(int32_t a, int32_t b, int32_t c, int16_t x) {
+/*  Find positive root (t) for a given value of x
+  det = sqrt(b^2 - 4ac)
+  root = (-b + det) / 2a
+*/
+  // b is not negative for our use case so we do an unsigned multiply to support 64K*64K > 2^31
+  int32_t b_sq = ((uint32_t)b * (uint32_t)b) >> 15;
+  int32_t f_ac = 4 * ((a * c) >> 15);
+  int32_t det = b_sq - f_ac;
+//  printf("# det: %d (%1.3f)", det, (double)det / INT16_MAX);
+  //int32_t det = ((b * b) >> 15) - 4 * ((a * c) >> 15);
+  if(det < 0)
+    return 0;
+
+  // We need an even number of fraction bits for isqrt_fixed()
+#define SQRT_FRAC   14
+#define SQRT_ADJ    (15 - SQRT_FRAC)
+  det = isqrt_fixed(det >> SQRT_ADJ, SQRT_FRAC) << SQRT_ADJ;
+//  printf("\tq: %d (%1.3f)  d-b: %1.3f  d-b/2a: %d\n", det, (double)det / INT16_MAX,
+//        (double)(det-b) / INT16_MAX, ((det - b) << 15) / a);
+
+  // Root is (det-b)/2a
+  // We're converting from signed Q1.15 to unsigned Q0.16 format for the result so the
+  // fixed-point adjustment has an extra 2x scaling (/2a --> /a).
+  int32_t root = ((det - b) << 15) / a;
+  return root < 0 ? 0 : root > UINT16_MAX ? UINT16_MAX : (uint16_t)root;
+}
+
+
+/*
+Find quadratic Bezier t-parameter for a given x value
+
+Fixed-point values for x0,x1,x2 in Q1.15 format
+x represents the interval [-1,1) in Q1.15 format
+
+This directly solves for t by evaluating the quadratic root. This is prone to numeric
+precision loss that :c:func:`bezier_search_t` doesn't have.
+
+Args:
+  x0: Point-0 X position
+  x1: Point-1 X position
+  x2: Point-2 X position
+  x:  Independent variable on X-axis
+
+Returns:
+  t-parameter suitable for :c:func:`quadratic_eval` or :c:func:`quadratic_bezier`
+*/
+uint16_t bezier_solve_t(int16_t x0, int16_t x1, int16_t x2, int16_t x) {
+  int32_t a = (int32_t)x0 - 2*(int32_t)x1 + (int32_t)x2;
+  int32_t b = 2*(int32_t)(x1 - x0);
+  int32_t c = x0 - x;
+
+//  printf("## a: %d (%1.2f)\tb: %d\tc: %d\n", a, (double)a / INT16_MAX, b, c);
+  return quadratic_solve(a,b,c, x);
+}
+
+
+/*
+Find quadratic Bezier t-parameter for a given x value
+
+This searches for t with binary search
+
+// https://stackoverflow.com/questions/51879836/cubic-bezier-curves-get-y-for-given-x-special-case-where-x-of-control-points?noredirect=1&lq=1
+
+
+Args:
+  p0: Start point in Q1.15 format
+  p1: Mid point in Q1.15 format
+  p2: End point in Q1.15 format
+  x:  Independent variable on X-axis in Q1.15 format
+
+Returns:
+  t-parameter suitable for :c:func:`quadratic_eval` or :c:func:`quadratic_bezier`
+*/
+uint16_t bezier_search_t(Point16 p0, Point16 p1, Point16 p2, int16_t x) {
+  // Binary search for t parameter that corresponds to the requested X-axis location
+  // Points must be monotonic along X-axis
+  uint16_t low = 0;
+  uint16_t high = UINT16_MAX;
+
+  while(low <= high) {
+    uint16_t mid = low + (high - low)/2;
+    int16_t delta = quadratic_eval(p0.x, p1.x, p2.x, mid) - x;
+    if(delta > -5 && delta < 5) { // Does not converge near endpoints so allow small margin
+      return mid;
+    } else if(delta > 0) {
+      high = mid-1;
+    } else {
+      low = mid+1;
+    }
+  }
+
+  return low;
 }
 

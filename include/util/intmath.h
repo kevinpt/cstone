@@ -25,6 +25,12 @@ DEALINGS IN THE SOFTWARE.
 #ifndef INTMATH_H
 #define INTMATH_H
 
+typedef struct {
+  int16_t x;
+  int16_t y;
+} Point16;
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -102,6 +108,14 @@ int to_fixed_base10_parts(long value, unsigned long fp_scale, long *integer, lon
 int fixed_base10_adjust(long *integer, long *frac, int frac_digits, int frac_places);
 long to_fixed_base10(long value, unsigned long fp_scale, int frac_places, int *b10_exp);
 long to_fixed_si(long value, int value_exp, unsigned fp_scale, char *si_prefix, bool pow2);
+
+Point16 interpolate_points(Point16 p0, Point16 p1, uint16_t t);
+uint16_t quadratic_solve(int32_t a, int32_t b, int32_t c, int16_t x);
+uint16_t bezier_solve_t(int16_t x0, int16_t x1, int16_t x2, int16_t x);
+int16_t quadratic_eval(int16_t a, int16_t b, int16_t c, uint16_t t);
+
+Point16 quadratic_bezier(Point16 p0, Point16 p1, Point16 p2, uint16_t t);
+uint16_t bezier_search_t(Point16 p0, Point16 p1, Point16 p2, int16_t x);
 
 #ifdef __cplusplus
 }

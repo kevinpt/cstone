@@ -40,7 +40,6 @@ typedef struct {
 extern "C" {
 #endif
 
-//unsigned long isqrt_fixed(unsigned long value, unsigned fp_exp);
 
 void stats_init(OnlineStats *os, unsigned fp_exp);
 

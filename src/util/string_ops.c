@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <ctype.h>
 #include <string.h>
+#include <limits.h>
 
 #include "string_ops.h"
 

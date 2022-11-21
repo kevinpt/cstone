@@ -39,6 +39,9 @@ reaches 2^fp_exp. For long running statistics you should arrange to replace an
 OnlineStats object with a fresh copy to avoid the numeric effects of division
 with a large sample count.
 
+Note that :c:func:`stats_std_dev` calls a fixed-point square root function that
+requires fp_exp to be an even number.
+
 ------------------------------------------------------------------------------
 */
 
