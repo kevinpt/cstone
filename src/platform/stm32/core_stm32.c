@@ -67,3 +67,21 @@ uint32_t timer_clock_rate(TIM_TypeDef *timer) {
 }
 
 
+// Convert DMA periph and stream to matching IRQ
+IRQn_Type stm32_dma_stream_irq(DMA_TypeDef *dma, unsigned stream) {
+  static const IRQn_Type s_dma1_irqs[] = {
+    DMA1_Stream0_IRQn, DMA1_Stream1_IRQn, DMA1_Stream2_IRQn, DMA1_Stream3_IRQn,
+    DMA1_Stream4_IRQn, DMA1_Stream5_IRQn, DMA1_Stream6_IRQn, DMA1_Stream7_IRQn
+  };
+
+  static const IRQn_Type s_dma2_irqs[] = {
+    DMA2_Stream0_IRQn, DMA2_Stream1_IRQn, DMA2_Stream2_IRQn, DMA2_Stream3_IRQn,
+    DMA2_Stream4_IRQn, DMA2_Stream5_IRQn, DMA2_Stream6_IRQn, DMA2_Stream7_IRQn
+  };
+
+  if(dma == DMA1)
+    return s_dma1_irqs[stream & 0x07];
+  else
+    return s_dma2_irqs[stream & 0x07];
+}
+
