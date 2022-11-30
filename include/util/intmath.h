@@ -38,6 +38,7 @@ extern "C" {
 uint32_t ceil_pow2(uint32_t x);
 uint32_t floor_pow2(uint32_t x);
 
+int32_t log2_fixed(uint32_t n, unsigned fp_exp);
 
 unsigned ilog10(uint32_t n);
 

@@ -67,6 +67,70 @@ uint32_t floor_pow2(uint32_t x) {
 
 
 /*
+
+  n:      Integer value to compute log2(n) over
+  fp_exp: Fixed-point exponent for n. 0 == n has no fraction, 1 = n scaled by 2^-1, etc.
+
+  Returns the logarithm in Q16.15 format
+*/
+
+/*
+Fixed-point base-2 logarithm
+
+Args:
+  n:      Fixed-point value to compute log2(n) over
+  fp_exp: Fixed-point exponent for n. 0 == n has no fraction, 1 = n scaled by 2^-1, etc.
+
+Returns:
+  Returns the logarithm in Q16.15 format
+*/
+int32_t log2_fixed(uint32_t n, unsigned fp_exp) {
+  //  Reference:
+  //  https://stackoverflow.com/questions/54661131/log2-approximation-in-fixed-pointer
+
+#define LOG2_FP_EXP       15
+#define LOG2_TABLE_BITS   6
+
+  // log2(1+n/64) * (2^15)
+  static const uint16_t log2_table[] = {
+    0,      733,    1455,   2166,   2866,   3556,   4236,   4907,   5568,   6220,
+    6863,   7498,   8124,   8742,   9352,   9954,   10549,  11136,  11716,  12289,
+    12855,  13415,  13968,  14514,  15055,  15589,  16117,  16639,  17156,  17667,
+    18173,  18673,  19168,  19658,  20143,  20623,  21098,  21568,  22034,  22495,
+    22952,  23404,  23852,  24296,  24736,  25172,  25604,  26031,  26455,  26876,
+    27292,  27705,  28114,  28520,  28922,  29321,  29717,  30109,  30498,  30884,
+    31267,  31647,  32024,  32397,  32768
+  };
+
+
+  // n = 2^l2_int * (1 + l2_frac)
+  int zeros = clz(n);
+  int32_t l2_int = -zeros;
+
+  // Extract fraction scaled by 2^32 so it is left justified
+  uint32_t frac = n << (zeros + 1);
+  int ix = frac >> ((8*sizeof frac) - LOG2_TABLE_BITS); // Index into table with upper bits of fraction
+  int32_t l2_frac = log2_table[ix];
+
+  // Get remaining fraction for interpolation
+  uint32_t ix_frac = frac << LOG2_TABLE_BITS;
+  ix_frac = ix_frac >> (32 - LOG2_FP_EXP); // Rescale to Q16.15
+
+  int32_t l2_frac_b = log2_table[ix+1];
+  // Interpolate between points
+  l2_frac = (((l2_frac_b - l2_frac) * ix_frac) >> LOG2_FP_EXP) + l2_frac;
+
+  // Merge integer and fraction
+  l2_int = (l2_int << LOG2_FP_EXP) + l2_frac;
+
+  // Adjust for exponent on input n
+  // Internally n is treated as if it is always in Q0.31 format.
+  // We have to add an offset (scaled to Q16.15) to compensate for the true binary point.
+  return l2_int + ((uint32_t)(31u - fp_exp) << LOG2_FP_EXP);
+}
+
+
+/*
 Integer base-10 logarithm
 
 From Hacker's Delight 2nd ed. Fig 11-10
