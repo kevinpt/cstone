@@ -17,6 +17,8 @@
 #include "cstone/blocking_io.h"
 #include "cstone/term_color.h"
 
+#include "cstone/debug.h"
+
 
 #define MAX_PROP_NAME_LEN  48
 
@@ -50,6 +52,7 @@ static void prop_item_destroy(dhKey key, void *value, void *ctx) {
   }
 }
 
+
 static bool prop_item_replace(dhKey key, void *old_value, void *new_value, void *ctx) {
   PropDB *db = (PropDB *)ctx;
   PropDBEntry *old_entry = (PropDBEntry *)old_value;
@@ -61,6 +64,10 @@ static bool prop_item_replace(dhKey key, void *old_value, void *new_value, void 
   // Preserve original attribute settings for this prop
   new_entry->readonly = old_entry->readonly;
   new_entry->persist  = old_entry->persist;
+  // We allow existing unprotected props to become protected but not the opposite
+  if(old_entry->protect)
+    new_entry->protect = old_entry->protect;
+
 
   if(new_entry->kind == P_KIND_NONE)
     new_entry->kind = old_entry->kind;
@@ -76,6 +83,7 @@ static bool prop_item_replace(dhKey key, void *old_value, void *new_value, void 
 
   return true; // Allow replacement
 }
+
 
 static dhIKey prop_gen_hash(dhKey key) {
   dhIKey ikey = (uintptr_t)key.data; // Data pointer is a prop ID
@@ -131,7 +139,8 @@ void prop_db_set_defaults(PropDB *db, const PropDefaultDef *defaults) {
       .value = cur->value,
       .kind = cur->kind,
       .readonly = (bool)(cur->attributes & P_READONLY),
-      .persist  = (bool)(cur->attributes & P_PERSIST)
+      .persist  = (bool)(cur->attributes & P_PERSIST),
+      .protect  = (bool)(cur->attributes & P_PROTECT)
     };
 
     if(cur->kind == P_KIND_STRING) {
@@ -194,15 +203,16 @@ bool prop_set(PropDB *db, uint32_t prop, PropDBEntry *value, uint32_t source) {
     .length = sizeof(uint32_t)
   };
 
-  if(value->kind == P_KIND_STRING && value->size == 0) {
+  if(value && value->kind == P_KIND_STRING && value->size == 0) {
     value->size = strlen((char *)value->value);
   }
 
   LOCK();
     if(value) {
+//      printf("PSET: %08lX = %" PRIu32 "\tprot: %d\n", prop, (uint32_t)value->value, value->protect);
       value->dirty = true;
       status = dh_insert(&db->hash, key, value);
-      // replace_item callback ensures that persist attribute remains unchanged
+      // replace_item callback ensures that persist and protect attributes remain unchanged
       // from original call to prop_set(). It changes the value struct to reflect
       // the current attributes.
       if(value->persist) {
@@ -294,8 +304,9 @@ bool prop_set_attributes(PropDB *db, uint32_t prop, uint8_t attributes) {
       if(!entry->persist && (attributes & P_PERSIST))
         db->persist_updated = true;
 
-      entry->persist = attributes & P_PERSIST;
-      entry->readonly = attributes & P_READONLY;
+      entry->persist  = (bool)(attributes & P_PERSIST);
+      entry->readonly = (bool)(attributes & P_READONLY);
+      entry->protect  = (bool)(attributes & P_PROTECT);
     }
   UNLOCK();
 
@@ -311,6 +322,7 @@ bool prop_get_attributes(PropDB *db, uint32_t prop, uint8_t *attributes) {
     uint8_t attrs = 0;
     if(entry.persist)  attrs |= P_PERSIST;
     if(entry.readonly) attrs |= P_READONLY;
+    if(entry.protect)  attrs |= P_PROTECT;
 
     *attributes = attrs;
     return true;
@@ -342,7 +354,8 @@ static void prop__print_entry(uint32_t prop, PropDBEntry *entry) {
   if(entry->persist)
     fputs(A_CYN, stdout);
 
-  bprintf(PROP_ID "  %-*s (%s", prop, s_longest_name, name, entry->readonly ? "ro" : "rw");
+  bprintf(PROP_ID "  %-*s (%s", prop, s_longest_name, name,
+          entry->readonly ? "ro" : entry->protect ? "so" : "rw");
 
   if(entry->persist)
     fputs(",p)  = ", stdout);

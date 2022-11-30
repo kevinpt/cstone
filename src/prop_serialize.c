@@ -246,6 +246,8 @@ int prop_decode(uint32_t *prop, PropDBEntry *entry, uint8_t *buf) {
   int num_bytes = 0;
   uint32_t val;
 
+  memset(entry, 0, sizeof *entry);
+
   entry->kind = *buf;
   buf++;
   num_bytes++;

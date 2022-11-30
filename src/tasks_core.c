@@ -235,6 +235,13 @@ static void log_db_task_cb(void *ctx) {
 
     update_prng_seed(&g_prop_db); // Generate a new seed
 
+    // Increment write counter
+    PropDBEntry entry;
+    if(prop_get(&g_prop_db, P_SYS_STORAGE_INFO_COUNT, &entry)) {
+      prop_set_uint(&g_prop_db, P_SYS_STORAGE_INFO_COUNT, entry.value + 1, 0);
+      prop_set_attributes(&g_prop_db, P_SYS_STORAGE_INFO_COUNT, P_PROTECT | P_PERSIST);
+    }
+
   } else {  // Timeout is active
     if(--s_log_update_timeout > 0) // Not expired
       return;

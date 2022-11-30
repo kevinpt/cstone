@@ -46,6 +46,7 @@ void update_prng_seed(PropDB *db) {
     seed ^= rot_right(entry.value, 8);
 
   prop_set_uint(db, P_SYS_PRNG_LOCAL_VALUE, seed, 0);
+  prop_set_attributes(db, P_SYS_PRNG_LOCAL_VALUE, P_PROTECT | P_PERSIST);
   DPRINT("New seed: %08lX\n", seed);
 }
 

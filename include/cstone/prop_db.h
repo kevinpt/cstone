@@ -55,12 +55,14 @@ typedef struct {
   size_t    size;   // Size of data
 
   // NOTE: This struct is padded out to sizeof(uintptr_t) in the dhash.
-  // With 32-bit pointers we can have four bytes of field values before bitfields
-  // are needed.
+  // With 32-bit pointers we can have four bytes of additional field values without
+  // growing the memory requirements.
   uint8_t   kind;     // Type of data stored in value
-  bool      readonly; // prop_set() not allowed
-  bool      persist;  // Properties that belong in non-volatile storage
-  bool      dirty;    // Modified by prop_set()
+  uint8_t   readonly  :1;
+  uint8_t   persist   :1;
+  uint8_t   protect   :1;
+  uint8_t   dirty     :1;
+  uint8_t   reserved  :4;
 } PropDBEntry;
 
 
@@ -72,8 +74,9 @@ typedef struct {
 } PropDefaultDef;
 
 // Attribute flags for PropDefaultDef
-#define P_READONLY 0x01
-#define P_PERSIST  0x02
+#define P_READONLY 0x01 // Read only prop that is never comitted to storage
+#define P_PERSIST  0x02 // Writable prop that is comitted to storage
+#define P_PROTECT  0x04 // Internally writable prop that can't be set from the console
 
 // Macros for defining array of default props
 #define P_UINT(p, val, attr)  {(p), (val), P_KIND_UINT, (attr)}

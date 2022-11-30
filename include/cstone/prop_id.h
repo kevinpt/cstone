@@ -504,6 +504,7 @@ struct PropNamespace {
 #define PROP_FIELD_DEF(level, ename, val)   {.field = PNAME(level, ename), .name = #level #ename},
 
 #define P_SYS_PRNG_LOCAL_VALUE        (P1_SYS | P2_PRNG | P3_LOCAL | P4_VALUE)
+#define P_SYS_STORAGE_INFO_COUNT      (P1_SYS | P2_STORAGE | P3_INFO | P4_COUNT)
 
 
 #ifdef __cplusplus

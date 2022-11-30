@@ -538,7 +538,27 @@ static int32_t cmd_log(uint8_t argc, char *argv[], void *eval_ctx) {
   }
 
   if(format) {
+    PropDBEntry entry;
+
+    uint32_t write_count = 0;
+    if(prop_get(&g_prop_db, P_SYS_STORAGE_INFO_COUNT, &entry)) // Retrieve write counter
+      write_count = (uint32_t)entry.value;
+
     logdb_format(&g_log_db);
+
+    // Create temporary prop DB to hold write counter
+    PropDB *fmt_prop_db = cs_malloc(sizeof(PropDB));
+    if(fmt_prop_db && prop_db_init(fmt_prop_db, 8, 0, &g_pool_set)) {
+
+      // Restore write counter
+      prop_set_uint(fmt_prop_db, P_SYS_STORAGE_INFO_COUNT, write_count, 0);
+      prop_set_attributes(fmt_prop_db, P_SYS_STORAGE_INFO_COUNT, P_PROTECT | P_PERSIST);
+      //prop_db_dump(fmt_prop_db);
+      save_props_to_log(fmt_prop_db, &g_log_db, /*compress*/false);
+
+      prop_db_free(fmt_prop_db);
+      cs_free(fmt_prop_db);
+    }
 
   } else if(read) {
     logdb_dump_record(&g_log_db);
@@ -624,6 +644,14 @@ static int32_t cmd_property(uint8_t argc, char *argv[], void *eval_ctx) {
     prop = prop_parse_name(prop_name);
 
   if(prop_value) {  // Assign new value to property
+    // Confirm we can write this prop
+    uint8_t attrs;
+    prop_get_attributes(&g_prop_db, prop, &attrs);
+    if(attrs & (P_READONLY | P_PROTECT)) {
+      printf("Prop is %s\n", (attrs & P_READONLY) ? "readonly" : "protected");
+      return -2;
+    }
+
     printf("Setting prop " PROP_ID " = '%s'\n", prop, prop_value);
 
     char *pos;
