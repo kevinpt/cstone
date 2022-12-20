@@ -33,6 +33,7 @@
 #include "cstone/tasks_core.h"
 #include "cstone/blocking_io.h"
 #include "cstone/rtc_device.h"
+#include "cstone/obj_metadata.h"
 
 #include "util/getopt_r.h"
 #include "util/string_ops.h"
@@ -47,10 +48,20 @@ extern mpPoolSet  g_pool_set;
 extern LogDB      g_log_db;
 
 
+extern const ObjectMetadata g_metadata;
+
 static int32_t cmd_build(uint8_t argc, char *argv[], void *eval_ctx) {
-  printf("  %s\n", g_build_date);
-  printf("    Firmware: %s\n", APP_VERSION);
-  printf("    FreeRTOS: %s\n", tskKERNEL_VERSION_NUMBER);
+  printf("  %s\n", g_build_time);
+  // Component versions
+#define PAD_STR  "%12s"
+  printf(PAD_STR": %s\n", "Firmware", APP_VERSION);
+  printf(PAD_STR": %s\n", "FreeRTOS", tskKERNEL_VERSION_NUMBER);
+
+  // Metadata info
+  printf(PAD_STR": %08"PRIx32"\n", "Git SHA", g_metadata.git_sha);
+  printf(PAD_STR": %s\n", "Type", g_metadata.debug_build ? A_RED "Debug" A_NONE : A_GRN "Release" A_NONE);
+  validate_metadata();
+
   return 0;
 }
 
