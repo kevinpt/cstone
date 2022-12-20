@@ -30,6 +30,8 @@ set(CSTONE_SOURCE_COMMON
     src/rtc_device.c
     src/rtc_soft.c
     src/dump_reg.c
+    src/profile.c
+    src/obj_metadata.c
     src/util/histogram.c
     src/util/bsd_string.c
     src/util/search.c
@@ -40,6 +42,7 @@ set(CSTONE_SOURCE_COMMON
     src/util/mempool.c
     src/util/crc8.c
     src/util/crc16.c
+    src/util/crc32.c
     src/util/hex_dump.c
     src/util/intmath.c
     src/util/string_ops.c
@@ -58,6 +61,8 @@ set(CSTONE_SOURCE_STM32
     src/platform/stm32/log_stm32.c
     src/platform/stm32/faults.c
     src/platform/stm32/rtc_stm32.c
+    src/platform/stm32/crc32_stm32.c
+    src/platform/stm32/cycle_counter_cortex.c
 )
 
 set(CSTONE_SOURCE_POSIX
