@@ -57,7 +57,8 @@ enum DebugFlags {
 #ifdef NDEBUG
 #  define DPUTS(msg)
 #  define DPRINT(...)
-#else
+
+#else // Debug mode
 
 #  define DPUTS(msg)  fputs(EMOJI_BUG A_GRN " ", stdout), fputs(__func__, stdout), \
                       puts(": " A_BGRN msg A_NONE)
