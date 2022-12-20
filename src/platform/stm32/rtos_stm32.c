@@ -123,3 +123,7 @@ void perf_timer_init(void) {
 }
 
 
+uint32_t perf_timer_freq(void) {
+  return PERF_CLOCK_HZ;
+}
+

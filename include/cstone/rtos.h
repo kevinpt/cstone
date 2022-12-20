@@ -57,6 +57,7 @@ static inline TaskHandle_t create_delayed_task(PeriodicTask task, void *ctx, con
 void perf_timer_init(void);
 uint32_t perf_timer_count(void);
 #endif
+uint32_t perf_timer_freq(void);
 
 size_t heap_c_lib_size(void);
 size_t heap_c_lib_free(void);
