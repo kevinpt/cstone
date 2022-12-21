@@ -60,10 +60,22 @@ struct option {
   int         val;      // Value to store in flag or short option letter
 };
 
-// Values for has_arg field:
+// Values for struct option has_arg field:
 #define no_argument         0
 #define required_argument   1
 #define optional_argument   2
+
+
+typedef struct {
+  const char *name;
+  const char *help;
+  const char *arg_name;
+  unsigned    flags;
+} OptionHelp;
+
+
+// Flags for OptionHelp
+#define OPT_REQUIRED  0x01
 
 
 #define getopt_init(s)   memset(s, 0, sizeof(*(s)))
@@ -78,6 +90,10 @@ int getopt_long_r(char * const argv[], const char *optstring, const struct optio
 static inline int getopt_r(char * const argv[], const char *optstring, GetoptState *state) {
   return getopt_long_r(argv, optstring, NULL,  state);
 }
+
+
+void print_command_usage(const char *app_name, const char *optstring, const struct option *long_options,
+                        const char **positional_args, const OptionHelp *opt_help, int max_columns);
 
 #ifdef __cplusplus
 }
