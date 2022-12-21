@@ -265,6 +265,31 @@ int range_cat_fmt(AppendRange *rng, const char *fmt, ...) {
 }
 
 
+int range_cat_vfmt(AppendRange *rng, const char *fmt, va_list args) {
+  int rval = 0;
+
+  if(rng->start < rng->end) { // Range is valid?
+    size_t len = range_size(rng);
+    if(len <= 1)  // Force single byte range to zero for formatted length query
+      len = 0;
+    rval = vsnprintf(rng->start, len, fmt, args);
+
+    if(rval > 0) {
+      if(rval < range_size(rng)) { // Success
+        rng->start += rval;
+      } else { // Truncated
+        if(rng->start)
+          *rng->start = '\0'; // Wipe partial string
+        rval = -rval;
+      }
+    }
+
+  }
+
+  return rval;
+}
+
+
 /*
 Concatenate a string to a range
 

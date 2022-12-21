@@ -26,6 +26,7 @@ DEALINGS IN THE SOFTWARE.
 #define RANGE_STRINGS_H
 
 #include <stdio.h> // For FILE*
+#include <stdarg.h>
 
 
 #ifndef COUNT_OF
@@ -80,6 +81,7 @@ int range_copy_str(AppendRange *rng, const char *str, bool truncate);
 // ******************** Append operations ********************
 __attribute__((format(printf, 2, 3)))
 int range_cat_fmt(AppendRange *rng, const char *fmt, ...);
+int range_cat_vfmt(AppendRange *rng, const char *fmt, va_list args);
 
 int range_cat_str(AppendRange *rng, const char *str);
 int range_cat_str_no_nul(AppendRange *rng, const char *str);
