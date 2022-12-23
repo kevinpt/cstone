@@ -15,8 +15,9 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 #include "cstone/console.h"
-#include "cstone/term_color.h"
 #include "cstone/blocking_io.h"
+
+#include "util/term_color.h"
 
 
 

@@ -14,9 +14,11 @@
 
 #include "cstone/dump_reg.h"
 #include "cstone/faults.h"
-#include "util/crc16.h"
-#include "cstone/term_color.h"
 #include "cstone/blocking_io.h"
+
+#include "util/crc16.h"
+#include "util/term_color.h"
+
 
 #ifndef COUNT_OF
 #  define COUNT_OF(a) (sizeof(a) / sizeof(*(a)))

@@ -4,9 +4,10 @@
 #include <inttypes.h>
 #include <string.h>
 
-#include "cstone/term_color.h"
 #include "cstone/blocking_io.h"
 #include "cstone/dump_reg.h"
+
+#include "util/term_color.h"
 
 
 static void print_binary(uint32_t value, uint8_t bits) {

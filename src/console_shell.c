@@ -13,13 +13,13 @@
 #include "semphr.h"
 
 #include "cstone/console.h"
-#include "cstone/term_color.h"
 #include "cstone/blocking_io.h"
 
 #include "task.h"
 #include "cstone/prop_id.h"
 #include "cstone/umsg.h"
 
+#include "util/term_color.h"
 #include "util/minmax.h"
 #include "util/string_ops.h"
 #include "bsd/string.h"

@@ -7,11 +7,11 @@
 #include "cstone/debug.h"
 #include "cstone/profile.h"
 #include "cstone/obj_metadata.h"
-#include "cstone/term_color.h"
 #include "cstone/crc32_stm32.h"
 
 #include "util/crc16.h"
 //#include "util/crc32.h"
+#include "util/term_color.h"
 
 #if 0
 // FIXME: Move CRC code to separate source

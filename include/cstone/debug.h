@@ -1,7 +1,7 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
-#include "cstone/term_color.h"
+#include "util/term_color.h"
 
 
 // Runtime debug levels

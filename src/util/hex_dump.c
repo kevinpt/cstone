@@ -36,29 +36,8 @@ Routines for dumping the contents of a data buffer.
 #include <string.h>
 #include <ctype.h>
 
+#include "term_color.h"
 #include "hex_dump.h"
-
-
-// ANSI color macros
-#define A_BLK "\033[0;30m"
-#define A_RED "\033[0;31m"
-#define A_GRN "\033[0;32m"
-#define A_YLW "\033[0;33m"
-#define A_BLU "\033[0;34m"
-#define A_MAG "\033[0;35m"
-#define A_CYN "\033[0;36m"
-#define A_WHT "\033[0;37m"
-
-#define A_BBLK "\033[1;30m"
-#define A_BRED "\033[1;31m"
-#define A_BGRN "\033[1;32m"
-#define A_BYLW "\033[1;33m"
-#define A_BBLU "\033[1;34m"
-#define A_BMAG "\033[1;35m"
-#define A_BCYN "\033[1;36m"
-#define A_BWHT "\033[1;37m"
-
-#define A_NONE "\033[0m"
 
 
 // Newlib doesn't support printf() %zu specifier

@@ -8,6 +8,7 @@
 
 #include "util/dhash.h"
 #include "util/mempool.h"
+#include "util/term_color.h"
 
 #include "build_config.h"
 #include "cstone/platform.h"
@@ -15,8 +16,6 @@
 #include "cstone/prop_db.h"
 #include "cstone/prop_serialize.h"
 #include "cstone/blocking_io.h"
-#include "cstone/term_color.h"
-
 #include "cstone/debug.h"
 
 
