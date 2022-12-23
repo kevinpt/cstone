@@ -336,7 +336,6 @@ int getopt_long_r(char * const argv[], const char *optstring, const struct optio
 
 
 static const OptionHelp *find_help(const char *name, const OptionHelp *opt_help) {
-  int i = 0;
   for(int i = 0; opt_help[i].name; i++) {
     if(!strcmp(opt_help[i].name, name))
       return &opt_help[i];
@@ -356,18 +355,29 @@ static const struct option *find_long_option(char short_opt, const struct option
 }
 
 
-static void print_help_detail(const OptionHelp *help, int opt_len, int max_opt_len, int max_arg_len,
-                        bool long_opt) {
-  int arg_pad = (max_opt_len + max_arg_len) - opt_len;
+static void print_help_detail(const OptionHelp *help, unsigned opt_len, unsigned max_prefix,
+                              unsigned  max_columns, bool long_opt) {
+  int prefix_len = opt_len;
+  bool break_line = max_prefix + strlen(help->help) > max_columns; // Check if it fits
+
+#define LINE_BREAK_INDENT   16
 
   if(help->arg_name) {
-    int arg_len = strlen(help->arg_name) + 3;
-    arg_pad = (arg_len <= arg_pad) ? arg_pad - arg_len : 0;
+    prefix_len += strlen(help->arg_name) + 1;
 
-    printf("%c<%s>%*s  %s", long_opt ? '=':' ', help->arg_name, arg_pad, "", help->help);
+    if(!break_line) {
+      printf("%c%s%*s  %s", long_opt ? '=':' ', help->arg_name, max_prefix-prefix_len, "", help->help);
+    } else {  // Break help text to new line
+      printf("%c%s\n", long_opt ? '=':' ', help->arg_name);
+      printf("%*s%s", LINE_BREAK_INDENT, "", help->help);
+    }
 
   } else {  // No argument string
-    printf("%*s  %s", arg_pad, "", help->help);
+    if(!break_line) {
+      printf("%*s  %s", max_prefix-prefix_len, "", help->help);
+    } else {  // Break help text to new line
+      printf("\n%*s%s", LINE_BREAK_INDENT, "", help->help);
+    }
   }
 }
 
@@ -405,13 +415,22 @@ of options with descriptive help.
 :c:data:`long_options` and :c:data:`opt_help` must be terminated by a NULL element.
 :c:data:`positional_args` must be terminated by an empty string.
 
+The :c:data:`opt_help` array has definitions of help text and an argument description
+for each option. Long options are identified by a matching string to the one in
+:c:data:`long_options`. Short options are identified by a matching single character string.
+
+The :c:data:`arg_name` field in the help definitions should be wrapped in angle brackets
+for variable options and curly braces for fixed choices:
+
+  * "<file path>"
+  * "{red|blue|green}"
 
 Args:
   app_name:         Application name
   optstring:        Short options as used by :c:func:`getopt_r`
   long_options:     Optional long options as used by :c:func:`getopt_long_r`
   positional_args:  Optional array of strings for positional args
-  opt_help:         Array of help definitions
+  opt_help:         Array of help definitions for the options
   max_columns:      Maximum columns for usage output
 */
 void print_command_usage(const char *app_name, const char *optstring, const struct option *long_options,
@@ -436,15 +455,24 @@ void print_command_usage(const char *app_name, const char *optstring, const stru
         const OptionHelp *help = find_help(long_options[lo].name, opt_help);
         bool required = help && (help->flags & OPT_REQUIRED);
 
-        const char *fmt = required ? " -%c|--%s%s" : " [-%c|--%s%s]";
-        append_option(buf, &buf_r, indent, max_columns,
-                      fmt, long_options[lo].val, long_options[lo].name,
-                      long_options[lo].has_arg != no_argument ? "=<>" : "");
+        const char *fmt;
+        if(!long_options[lo].flag && isgraph(long_options[lo].val)) { // Have short option
+          fmt = required ? " -%c|--%s%s" : " [-%c|--%s%s]";
+          append_option(buf, &buf_r, indent, max_columns,
+                        fmt, long_options[lo].val, long_options[lo].name,
+                        long_options[lo].has_arg != no_argument ? "=<>" : "");
+
+        } else {  // No short option
+          fmt = required ? " --%s%s" : " [--%s%s]";
+          append_option(buf, &buf_r, indent, max_columns,
+                        fmt, long_options[lo].name,
+                        long_options[lo].has_arg != no_argument ? "=<>" : "");
+        }
+
       }
     }
 
     // Short options
-    char short_opt[2] = {0};
     for(int i = 0; optstring[i] != '\0'; i++) {
       if(long_options && find_long_option(optstring[i], long_options)) continue;
       if(optstring[i] == ':') continue;
@@ -477,30 +505,43 @@ void print_command_usage(const char *app_name, const char *optstring, const stru
   puts("");
 
 
-  // Find longest arg string so we can indent detailed options consistently
-  int max_arg_len = 2;
-  for(int i = 0; opt_help[i].name; i++) {
-    if(!opt_help[i].arg_name) continue;
+  int max_prefix = 4; // ("  -x")
 
-    int arg_len = strlen(opt_help[i].arg_name) + 3;
-    max_arg_len = (arg_len > max_arg_len) ? arg_len : max_arg_len;
+  if(long_options) {
+    // Find the longest long option + arg name combo
+    for(int lo = 0; long_options[lo].name; lo++) {
+      int prefix_len = 6 + 2 + strlen(long_options[lo].name);
+
+      const OptionHelp *help = find_help(long_options[lo].name, opt_help);
+      if(help && help->arg_name)
+        prefix_len += strlen(help->arg_name) + 1;
+
+      max_prefix = (prefix_len > max_prefix) ? prefix_len : max_prefix;
+    }
+  }
+
+  // Find the longest short option + arg name combo
+  for(int i = 0; optstring[i] != '\0'; i++) {
+    if(long_options && find_long_option(optstring[i], long_options)) continue;
+    if(optstring[i] == ':') continue;
+
+    int prefix_len = 4;
+
+    short_opt[0] = optstring[i];
+    const OptionHelp *help = find_help(short_opt, opt_help);
+    if(help && help->arg_name)
+      prefix_len += strlen(help->arg_name) + 1;
+
+    max_prefix = (prefix_len > max_prefix) ? prefix_len : max_prefix;
   }
 
 
-  int max_opt_len = 4;  // Basic short options ("  -x")
-
   // Print detailed long options
   if(long_options) {
-    // Find the longest long option
-    for(int lo = 0; long_options[lo].name; lo++) {
-      int opt_len = 6 + 2 + strlen(long_options[lo].name);
-      max_opt_len = (opt_len > max_opt_len) ? opt_len : max_opt_len;
-    }
-
     for(int lo = 0; long_options[lo].name; lo++) {
       if(!long_options[lo].flag && isgraph(long_options[lo].val)) {  // Have short option
         printf("  -%c, --%s", long_options[lo].val, long_options[lo].name);
-      } else {
+      } else { // No short option
         printf("      --%s", long_options[lo].name);
       }
       int opt_len = 6 + 2 + strlen(long_options[lo].name);
@@ -508,7 +549,7 @@ void print_command_usage(const char *app_name, const char *optstring, const stru
       const OptionHelp *help = find_help(long_options[lo].name, opt_help);
 
       if(help) {
-        print_help_detail(help, opt_len, max_opt_len, max_arg_len, /*long_opt*/true);
+        print_help_detail(help, opt_len, max_prefix, max_columns, /*long_opt*/true);
       } else {  // No help. Show if arg is present
         if(long_options[lo].has_arg != no_argument)
           printf("=<%s>", long_options[lo].has_arg == required_argument ? "required" : "optional");
@@ -529,7 +570,7 @@ void print_command_usage(const char *app_name, const char *optstring, const stru
     short_opt[0] = optstring[i];  // Convert to single char string
     const OptionHelp *help = find_help(short_opt, opt_help);
     if(help) {
-      print_help_detail(help, opt_len, max_opt_len, max_arg_len, /*long_opt*/false);
+      print_help_detail(help, opt_len, max_prefix, max_columns, /*long_opt*/false);
     } else {
       if(optstring[i+1] == ':')
         printf(" <%s>", (optstring[i+2]== ':') ? "optional" : "required");
@@ -546,7 +587,7 @@ void print_command_usage(const char *app_name, const char *optstring, const stru
 
       const OptionHelp *help = find_help(positional_args[i], opt_help);
       if(help)
-        print_help_detail(help, opt_len, max_opt_len, max_arg_len, /*long_opt*/false);
+        print_help_detail(help, opt_len, max_prefix, max_columns, /*long_opt*/false);
 
       puts("");
       i++;
