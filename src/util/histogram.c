@@ -32,6 +32,7 @@ DEALINGS IN THE SOFTWARE.
 #include "histogram.h"
 #include "intmath.h"
 #include "minmax.h"
+#include "term_color.h"
 
 
 static bool histogram_init_from_buf(Histogram *hist, size_t hist_size, size_t num_bins,
@@ -152,15 +153,34 @@ void histogram_add_sample(Histogram *hist, int32_t sample) {
 }
 
 
+/*
+Get the largest bin count for the current data set
+
+Args:
+  hist:   Histogram to work on
+
+Returns:
+  Largest bin count
+*/
+
+uint32_t histogram_max_bin(Histogram *hist) {
+  uint32_t max_pop = 0;
+  for(size_t bin_ix = 0; bin_ix < hist->num_bins; bin_ix++) {
+    max_pop = max(max_pop, hist->bins[bin_ix]);
+  }
+  return max_pop;
+}
+
+
 
 /*
-Plot a bar chart of histogram bins
+Plot a bar chart of histogram bins with a vertical axis
 
 Args:
   hist:         Histogram to work on
   max_bar_len:  Maximum number of chars for longest bar
 */
-void histogram_plot(Histogram *hist, unsigned int max_bar_len) {
+uint32_t histogram_plot(Histogram *hist, unsigned max_bar_len) {
   // Get max population
   uint32_t max_pop = 0;
   for(size_t bin_ix = 0; bin_ix < hist->num_bins; bin_ix++) {
@@ -183,15 +203,45 @@ void histogram_plot(Histogram *hist, unsigned int max_bar_len) {
 
 
   // Plot histogram
+
+#define TICK_VMAJ_S  u8"\u2511"
+#define TICK_VMAJ_M  u8"\u2525"
+#define TICK_VMAJ_E  u8"\u2519"
+
+  static const char *vticks[] = {TICK_VMAJ_S, TICK_VMAJ_M, TICK_VMAJ_E, " "};
+
   int32_t bin_label = hist->bin_low;
 
   for(size_t bin_ix = 0; bin_ix < hist->num_bins; bin_ix++) {
 
-    if(hist->track_overflow && bin_ix == hist->num_bins-1)  // Overflow bar
-      printf(u8"  %*s : %*" PRIu32 u8" \u2502", label_len, "OV", pop_len, hist->bins[bin_ix]);
-    else // Normal bar
-      printf(u8"  %*" PRId32 " : %*" PRIu32 u8" \u2502", label_len, bin_label, pop_len, hist->bins[bin_ix]);
+    bool overflow = hist->track_overflow && bin_ix == hist->num_bins-1;
 
+    const char *tick;
+    if(bin_ix == 0)
+      tick = vticks[0]; // Start
+    else if(bin_ix == hist->num_bins - (hist->track_overflow ? 2 : 1))
+      tick = vticks[2]; // End
+    else if(overflow)
+      tick = vticks[3];
+    else
+      tick = vticks[1]; // Middle
+
+
+    // Ticks
+    if(overflow)  // Red overflow bar
+      printf(A_YLW u8"  %*s %s" A_NONE, label_len, "OV", tick);
+    else // Normal bar
+      printf(A_YLW u8"  %*" PRId32 " %s" A_NONE, label_len, bin_label, tick);
+
+    // Pop count for bin
+    if(hist->bins[bin_ix] > 0)
+      printf(" %*" PRIu32 " ", pop_len, hist->bins[bin_ix]);
+
+    if(overflow)
+      fputs(A_BRED, stdout);
+
+
+    // Bar
 #define FULL_BLOCK      u8"\u2588"
 #define THREEQTR_BLOCK  u8"\u258A"
 #define HALF_BLOCK      u8"\u258C"
@@ -204,13 +254,221 @@ void histogram_plot(Histogram *hist, unsigned int max_bar_len) {
       fputs(FULL_BLOCK, stdout);
     }
     switch(fraction) {
-    case 1: puts(QUARTER_BLOCK); break;
-    case 2: puts(HALF_BLOCK); break;
-    case 3: puts(THREEQTR_BLOCK); break;
-    default: puts(""); break;
+    case 1: fputs(QUARTER_BLOCK, stdout); break;
+    case 2: fputs(HALF_BLOCK, stdout); break;
+    case 3: fputs(THREEQTR_BLOCK, stdout); break;
+    default: break;
     }
+
+    // End bar
+    puts(overflow ? A_NONE : "");
 
     bin_label += hist->bin_step;
   }
 
+  return max_pop;
 }
+
+
+/*
+Plot a bar chart of histogram bins with a horizontal axis
+
+Bars longer than :c:data:`bar_threshold` are not considered for vertical scaling.
+Over-long bars are capped with a triangle indicating they extend beyond
+the chart.
+
+Args:
+  hist:           Histogram to work on
+  max_bar_len:    Maximum number of char cells for longest bar
+  indent:         Number of chars to indent
+  min_tick_step:  Minimum chars between ticks. 0 for default.
+  bar_threshold:  Limit length of bars longer then threshold. 0 to disable.
+*/
+uint32_t histogram_plot_horiz(Histogram *hist, unsigned max_bar_len, unsigned indent,
+                              unsigned min_tick_step, uint32_t bar_threshold) {
+  // Get max population
+  uint32_t max_pop = 1;
+  for(size_t bin_ix = 0; bin_ix < hist->num_bins; bin_ix++) {
+    if(bar_threshold == 0 || hist->bins[bin_ix] <= bar_threshold)
+      max_pop = max(max_pop, hist->bins[bin_ix]);
+  }
+
+  // Build bitmap of cells containing bars
+  // Fractionally covered cells are encoded bitwise
+#define bytes_per_bar  max_bar_len
+  uint8_t *bmap = calloc(hist->num_bins * bytes_per_bar, 1);
+  if(!bmap)
+    return 0;
+
+  for(size_t bin_ix = 0; bin_ix < hist->num_bins; bin_ix++) {
+    unsigned bar_len;
+    bool truncated = bar_threshold > 0 && hist->bins[bin_ix] > max_pop;
+      if(!truncated)
+        bar_len = hist->bins[bin_ix] * (max_bar_len*8) / max_pop;
+      else
+        bar_len = max_bar_len*8;
+
+    // Fill full cells 8-bits at once
+    int addr = 0;
+    for(unsigned y = 0; y < bar_len/8; y++) {
+      addr = bin_ix*bytes_per_bar + y;
+      bmap[addr] = 0xFF;
+    }
+    if(truncated)
+      bmap[addr] = 0x10;
+
+    // Fill partial cells at top of bar
+    unsigned sy = (bar_len/8)*8;
+    if(sy < bar_len) {
+      addr = bin_ix*bytes_per_bar + sy/8;
+      uint8_t partial = (1u << (bar_len - sy))-1;
+      bmap[addr] = partial;
+    }
+  }
+
+  // Block drawing for partial char cells
+  static const char *hist_chars[] = {".", u8"\u2581", u8"\u2582", u8"\u2583",
+                    u8"\u2584", u8"\u2585", u8"\u2586", u8"\u2587", u8"\u2588",
+                    u8"\u25B2"}; // Triangle
+
+  // Plot histogram
+  for(int y = max_bar_len-1; y >= 0; y--) {
+    bool overflow = false;
+
+    printf("%*s", indent, "");
+    for(size_t bin_ix = 0; bin_ix < hist->num_bins; bin_ix++) {
+      uint8_t cell = bmap[bin_ix*bytes_per_bar + y];
+      if(hist->track_overflow) // Overflow bar is red
+        overflow = bin_ix == hist->num_bins-1 && cell != 0;
+
+      if(overflow)
+        fputs(A_RED, stdout);
+
+      switch(cell) {
+      case 0x00: fputs(hist_chars[0], stdout); break;
+      case 0x01: fputs(hist_chars[1], stdout); break;
+      case 0x03: fputs(hist_chars[2], stdout); break;
+      case 0x07: fputs(hist_chars[3], stdout); break;
+      case 0x0F: fputs(hist_chars[4], stdout); break;
+      case 0x1F: fputs(hist_chars[5], stdout); break;
+      case 0x3F: fputs(hist_chars[6], stdout); break;
+      case 0x7F: fputs(hist_chars[7], stdout); break;
+      case 0xFF: fputs(hist_chars[8], stdout); break;
+      case 0x10: fputs(hist_chars[9], stdout); break; // Truncated bar
+      default: fputs("x", stdout); break; // Shouldn't ever happen
+      }
+
+    }
+    puts(overflow ? A_NONE : "");
+  }
+
+  free(bmap);
+
+
+  // Plot tick marks
+  unsigned num_bins = hist->num_bins;
+  if(hist->track_overflow)  // No tick under overflow bar
+    num_bins--;
+
+  // Ensure ticks are spaced enough to permit label with one space
+  unsigned min_step_low = base10_digits(iabs(hist->bin_low)) + 1;
+  if(hist->bin_low < 0) min_step_low++;
+  unsigned min_step_high = base10_digits(iabs(hist->bin_high)) + 1;
+  if(hist->bin_high < 0) min_step_high++;
+
+  min_tick_step = max(min_tick_step, max(min_step_low, min_step_high));
+
+
+  unsigned tick_step = num_bins;
+  // Find integer divisor for bins
+  for(unsigned d = 25; d >= min_tick_step; d--) {
+    if((num_bins / d) * d == num_bins)
+      tick_step = d;
+  }
+
+  printf("%*s" A_YLW, indent, "");
+  unsigned axis_pos = 0;
+  unsigned tick_pos = tick_step;
+
+#define TICK_MAJ_S  u8"\u250E"
+#define TICK_MAJ_M  u8"\u2530"
+#define TICK_MAJ_E  u8"\u2512"
+#define H_LINE      u8"\u2500"
+
+  while(axis_pos < num_bins) {
+    if(axis_pos == 0) {
+      fputs(TICK_MAJ_S, stdout);
+    } else if(axis_pos == num_bins-1) {
+      puts(TICK_MAJ_E A_NONE);
+    } else if(axis_pos >= tick_pos) {
+      fputs(TICK_MAJ_M, stdout);
+      tick_pos += tick_step;
+    } else {
+      fputs(H_LINE, stdout);
+    }
+    axis_pos++;
+  }
+
+
+  // Plot bin labels
+  int32_t bin_label = hist->bin_low;
+
+  bool adj_neg_labels = false;
+  if(bin_label < 0 && indent > 0)
+    adj_neg_labels = true;
+
+  if(adj_neg_labels) // Shift negative labels left one char to align digit with tick
+    indent--;
+  printf("%*s" A_YLW, indent, "");
+
+  unsigned last_tick_step = tick_step;
+  axis_pos = 0;
+  while(axis_pos < num_bins) {
+    if(axis_pos + tick_step >= num_bins) { // Last tick may need adjustment
+      last_tick_step = tick_step;
+      tick_step = num_bins - axis_pos - 1;
+      if(tick_step == 0)
+        break;
+    }
+
+    printf("%-*"PRIi32, tick_step, bin_label);
+
+    int32_t next_label = bin_label + hist->bin_step * tick_step;
+    if(adj_neg_labels && bin_label < 0 && next_label >= 0) // Add extra space to undo left adjustment
+      fputs(" ", stdout);
+
+    axis_pos += tick_step;
+    bin_label = next_label;
+  }
+
+  // Last label
+  printf("%s%"PRIi32 A_NONE"\n", last_tick_step < min_tick_step ? " " : "",
+                            num_bins * hist->bin_step);
+
+  return max_pop;
+}
+
+
+
+
+#ifdef TEST_HISTOGRAM
+int main(void) {
+  Histogram *h = histogram_init(50, 0, 100, /*track_overflow*/true);
+
+  const int counts[150] = {[0]=1, [50]=32, [80]=16+3, [149]=10};
+  for(int i = 0; i < 150; i++) {
+    for(int s = 0; s < counts[i]; s++)
+      histogram_add_sample(h, i);
+  }
+
+//  histogram_plot_horiz(h, 4, 2, 0, 0);
+
+  uint32_t max_bin = histogram_max_bin(h);
+  histogram_plot_horiz(h, 4, 2, 0, max_bin * 7 / 8);
+//  histogram_plot(h, 50);
+
+  free(h);
+
+  return 0;
+}
+#endif

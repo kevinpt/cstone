@@ -131,8 +131,10 @@ static Histogram *s_load_hist;
 static uint32_t s_sys_load = 0;
 
 void plot_load_stats(void) {
-  puts("  System load %:");
-  histogram_plot(s_load_hist, 50);
+  puts("\n  System load %:");
+  uint32_t max_bin = histogram_max_bin(s_load_hist);
+  histogram_plot_horiz(s_load_hist, /*max_bar_len*/6, /*indent*/4, /*min_tick_step*/0,
+    /*bar_threshold*/max_bin * 7 / 8);
 }
 
 
@@ -292,7 +294,7 @@ void core_tasks_init(void) {
   // ** Timer tasks **
 
 #ifdef USE_LOAD_MONITOR
-  s_load_hist = histogram_init(20, 0, 100, /* track_overflow */ true);
+  s_load_hist = histogram_init(50, 0, 100, /*track_overflow*/false);
 
   TimerHandle_t load_timer = xTimerCreate(  // System load monitor
     "LOAD",

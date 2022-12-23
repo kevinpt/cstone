@@ -45,7 +45,12 @@ static inline void histogram_free(Histogram *hist) {
 void histogram_reset(Histogram *hist);
 void histogram_set_bounds(Histogram *hist, int32_t bin_low, int32_t bin_high);
 void histogram_add_sample(Histogram *hist, int32_t sample);
-void histogram_plot(Histogram *hist, unsigned int max_bar_len);
+uint32_t histogram_max_bin(Histogram *hist);
+
+uint32_t histogram_plot(Histogram *hist, unsigned max_bar_len);
+uint32_t histogram_plot_horiz(Histogram *hist, unsigned max_bar_len, unsigned indent,
+                              unsigned min_tick_step, uint32_t bar_threshold);
+
 
 #ifdef __cplusplus
 }
