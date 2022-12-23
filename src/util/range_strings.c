@@ -146,8 +146,8 @@ for strtok_r() with the benefit that the input string is not altered.
 #include <stdbool.h>
 #include <ctype.h>
 #include <assert.h> // For static_assert
-#include "range_strings.h"
-#include "intmath.h"
+#include "util/range_strings.h"
+#include "util/intmath.h"
 
 
 // ******************** Range initialization ********************

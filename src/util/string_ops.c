@@ -4,7 +4,7 @@
 #include <string.h>
 #include <limits.h>
 
-#include "string_ops.h"
+#include "util/string_ops.h"
 
 #ifndef COUNT_OF
 #  define COUNT_OF(a) (sizeof(a) / sizeof(*(a)))

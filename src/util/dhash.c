@@ -56,9 +56,9 @@ Reference:
 #include <stddef.h>
 #include <ctype.h>
 
-#include "dhash.h"
-#include "prime_modulus.h"
-#include "search.h"
+#include "util/dhash.h"
+#include "util/prime_modulus.h"
+#include "util/search.h"
 
 
 

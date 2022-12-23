@@ -91,7 +91,6 @@ target_include_directories(cstone
   PUBLIC
     "include"
   PRIVATE
-    "include/util"
     "${CMAKE_SOURCE_DIR}/include"
     "${CMAKE_SOURCE_DIR}/include/lib_cfg"
     "${CMAKE_SOURCE_DIR}/include/stm32"

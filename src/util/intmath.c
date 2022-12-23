@@ -27,7 +27,7 @@ DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <assert.h>
 
-#include "intmath.h"
+#include "util/intmath.h"
 
 
 // __builtin_clz() added in GCC 3.4 and Clang 5

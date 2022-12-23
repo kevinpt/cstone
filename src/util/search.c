@@ -60,7 +60,7 @@ This logic reverses if the array is sorted in descending order.
 */
 
 #include <stddef.h>
-#include "search.h"
+#include "util/search.h"
 
 /*
 Search an array for an exact matching item

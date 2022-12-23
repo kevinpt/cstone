@@ -24,7 +24,7 @@ DEALINGS IN THE SOFTWARE.
 
 #include <stdint.h>
 #include <stdlib.h>
-#include "crc32.h"
+#include "util/crc32.h"
 
 #define CRC32_POLY  0x04C11DB7   // Ethernet CRC-32
 // Hamming distance 4 up to 91607 data bits (11450 bytes)

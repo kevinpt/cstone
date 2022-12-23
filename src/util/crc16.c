@@ -24,7 +24,7 @@ DEALINGS IN THE SOFTWARE.
 
 #include <stdint.h>
 #include <stdlib.h>
-#include "crc16.h"
+#include "util/crc16.h"
 
 #define CRC16_POLY  0x8005  // (x^16) + x^15 + x^2 + x^0  CRC-16/CMS
 // Hamming distance 4 up to 32751 data bits (4093 bytes)

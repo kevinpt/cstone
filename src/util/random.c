@@ -35,7 +35,7 @@ This is not for applications that require cryptographic security.
 #include <stddef.h>
 #include <time.h>
 
-#include "random.h"
+#include "util/random.h"
 
 // https://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)Randomization.html
 // https://en.wikipedia.org/wiki/Xorshift

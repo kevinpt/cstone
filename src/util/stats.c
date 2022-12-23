@@ -50,8 +50,8 @@ requires fp_exp to be an even number.
 #include <stdlib.h>
 #include <string.h>
 
-#include "intmath.h"
-#include "stats.h"
+#include "util/intmath.h"
+#include "util/stats.h"
 
 
 /*

@@ -25,9 +25,9 @@ DEALINGS IN THE SOFTWARE.
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "range_strings.h"
-#include "num_format.h"
-#include "intmath.h"
+#include "util/range_strings.h"
+#include "util/num_format.h"
+#include "util/intmath.h"
 
 
 /*

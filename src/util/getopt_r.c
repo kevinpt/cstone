@@ -66,9 +66,9 @@ colon in the optstring:
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "range_strings.h"
-#include "getopt_r.h"
-#include "term_color.h"
+#include "util/range_strings.h"
+#include "util/getopt_r.h"
+#include "util/term_color.h"
 
 
 #define ERR_MISSING_OPT   ':'

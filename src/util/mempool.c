@@ -32,13 +32,13 @@ DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <ctype.h>
 
-#include "locking.h"
-#include "list_ops.h"
+#include "util/locking.h"
 
-#include "range_strings.h"
-#include "num_format.h"
-#include "intmath.h"
-#include "mempool.h"
+#include "util/list_ops.h"
+#include "util/range_strings.h"
+#include "util/num_format.h"
+#include "util/intmath.h"
+#include "util/mempool.h"
 
 #define MP_FLAG_STATIC   0x01
 #define MP_FLAG_DISABLED 0x02

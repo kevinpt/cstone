@@ -36,8 +36,8 @@ Routines for dumping the contents of a data buffer.
 #include <string.h>
 #include <ctype.h>
 
-#include "term_color.h"
-#include "hex_dump.h"
+#include "util/term_color.h"
+#include "util/hex_dump.h"
 
 
 // Newlib doesn't support printf() %zu specifier

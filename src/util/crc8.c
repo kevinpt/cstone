@@ -24,7 +24,7 @@ DEALINGS IN THE SOFTWARE.
 
 #include <stdint.h>
 #include <stdlib.h>
-#include "crc8.h"
+#include "util/crc8.h"
 
 #define CRC8_POLY  0x31   // (x^8) + x^5 +x^4 +x^0  CRC-8/NRSC-5
 // Hamming distance 4 up to 119 data bits (14 bytes)

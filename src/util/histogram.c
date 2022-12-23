@@ -29,10 +29,10 @@ DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 
-#include "histogram.h"
-#include "intmath.h"
-#include "minmax.h"
-#include "term_color.h"
+#include "util/histogram.h"
+#include "util/intmath.h"
+#include "util/minmax.h"
+#include "util/term_color.h"
 
 
 static bool histogram_init_from_buf(Histogram *hist, size_t hist_size, size_t num_bins,
