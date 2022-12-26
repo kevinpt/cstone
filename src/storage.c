@@ -28,7 +28,12 @@ void storage_dump_raw(StorageConfig *store, size_t dump_bytes, size_t offset) {
       block_size = end_pos - read_pos;
 
     if(store->read_block(store->ctx, read_pos, block, block_size)) {
-      dump_array_init(&das, block, block_size, /*show_ascii*/true, /*ansi_color*/true);
+      DumpArrayCfg cfg = {
+        .show_ascii = true,
+        .ansi_color = true,
+        .indent = 4
+      };
+      dump_array_init(&das, block, block_size, 0, &cfg);
       das.line_addr = read_pos;
 
     BLOCK_IO_START();

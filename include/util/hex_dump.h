@@ -22,20 +22,34 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
 
-/* Hex data dump library */
+/*
+------------------------------------------------------------------------------
+Hex data dump library
+
+This prints array data as a hex dump with optional ANSI coloration.
+------------------------------------------------------------------------------
+*/
 
 #ifndef HEX_DUMP_H
 #define HEX_DUMP_H
+
+typedef struct {
+  bool show_ascii;    // Show printable ASCII dump
+  bool ansi_color;    // Colorize output
+  const char *prefix; // Optional prefix at the start of each line
+  int indent;         // Indentation level for dumped lines
+  int addr_size;      // Characters for printing address field
+} DumpArrayCfg;
 
 
 typedef struct {
   uint8_t *buf;
   size_t buf_len;
-  bool show_ascii;
-  bool ansi_color;
+  size_t buf_addr;
+  DumpArrayCfg cfg;
 
   size_t buf_pos;
-  size_t line_addr;   // 
+  size_t line_addr;
   size_t line_offset; // Bytes to skip at start of line
 } DumpArrayState;
 
@@ -44,12 +58,15 @@ typedef struct {
 extern "C" {
 #endif
 
-void dump_array(uint8_t *buf, size_t buf_len);
-void dump_array_ex(uint8_t *buf, size_t buf_len, bool show_ascii, bool ansi_color);
+// ******************** Bulk dump operations ********************
+void dump_array(const uint8_t *buf, size_t buf_len);
+void dump_array_ex(const uint8_t *buf, size_t buf_len, size_t buf_addr, const DumpArrayCfg *cfg);
 
 
-void dump_array_init(DumpArrayState *state, uint8_t *buf, size_t buf_len,
-                      bool show_ascii, bool ansi_color);
+// ******************** Line by line dump operations ********************
+// Use these for systems with limited memory for stdout buffer
+void dump_array_init(DumpArrayState *state, uint8_t *buf, size_t buf_len, size_t buf_addr,
+                     DumpArrayCfg *cfg);
 bool dump_array_line(DumpArrayState *state);
 void dump_array_state(DumpArrayState *state);
 

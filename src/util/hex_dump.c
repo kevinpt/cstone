@@ -40,54 +40,62 @@ Routines for dumping the contents of a data buffer.
 #include "util/hex_dump.h"
 
 
-// Newlib doesn't support printf() %zu specifier
-#ifdef linux  // x64
+
+// Newlib doesn't support printf() %zu specifier so we detect the target platform
+#if defined __linux__ || defined __APPLE__ || defined _WIN32  // System libc for full OS env.
 #  define PRIuz "zu"
 #  define PRIXz "zX"
-#else // Newlib on ARM
+// Baremetal:
+#elif defined __arm__ // Newlib on ARM32
 // arm-none-eabi has size_t as "unsigned int" but uint32_t is "long unsigned int". Crazy
 #  define PRIuz "u"
 #  define PRIXz "X"
+#elif defined __aarch64__ // Newlib on ARM64
+#  define PRIuz "lu"
+#  define PRIXz "lX"
+#else
+#  error "Unknown target platform"
 #endif
 
 
+#define ADDR_LEN        4
+
 // Dump a line of hex data
-static void hex_dump(size_t line_addr, size_t buf_addr, uint8_t *buf, size_t buf_len,
-                     int indent, int addr_size, bool show_ascii, bool ansi_color) {
+static void hex_dump_line(size_t line_addr, size_t buf_addr, const uint8_t *buf, size_t buf_len,
+                     const DumpArrayCfg *cfg) {
   size_t offset = buf_addr - line_addr;
   unsigned int line_bytes = 16;
+  int addr_size = (cfg->addr_size == 0) ? ADDR_LEN : cfg->addr_size;
+
+  bool color_on = false;
+
+#define SET_COLOR(c)  if(cfg->ansi_color && !color_on) fputs(c, stdout); color_on = true
+#define END_COLOR     if(cfg->ansi_color && color_on) fputs(A_NONE, stdout); color_on = false
+
+  if(cfg->prefix)
+    fputs(cfg->prefix, stdout);
 
   // Indent line and show address
-  if(ansi_color)
-    fputs(A_BLU, stdout);
-
-  printf("%*s%0*" PRIXz "  ", indent, " ", addr_size, line_addr);
-
-  if(ansi_color)
-    fputs(A_NONE, stdout);
-
+  SET_COLOR(A_BLU);
+  printf("%*s%0*" PRIXz "  ", cfg->indent, " ", addr_size, line_addr);
+  END_COLOR;
 
   // Print leading gap
   for(size_t i = 0; i < offset; i++) {
     fputs("   ", stdout);
   }
   // Print data
-  bool color_on = false;
+
   for(size_t i = 0; i < buf_len; i++) {
     if(isgraph(buf[i])) {
-      if(ansi_color && !color_on)
-        fputs(A_YLW, stdout);
-      color_on = true;
+      SET_COLOR(A_YLW);
       printf("%02X ", buf[i]);
     } else {
-      if(ansi_color && color_on)
-        fputs(A_NONE, stdout);
-      color_on = false;
+      END_COLOR;
       printf("%02X ", buf[i]);
     }
   }
-  if(ansi_color && color_on)
-    fputs(A_NONE, stdout);
+  END_COLOR;
 
 
   // Print trailing gap
@@ -99,11 +107,8 @@ static void hex_dump(size_t line_addr, size_t buf_addr, uint8_t *buf, size_t buf
     }
   }
 
-  if(show_ascii) {
-    if(ansi_color)
-      fputs(A_GRN " |" A_NONE, stdout);
-    else
-      fputs(" |", stdout);
+  if(cfg->show_ascii) {
+    fputs(cfg->ansi_color ? A_GRN " |" A_NONE : " |", stdout);
 
     offset = buf_addr - line_addr;
     // Print leading gap
@@ -114,21 +119,14 @@ static void hex_dump(size_t line_addr, size_t buf_addr, uint8_t *buf, size_t buf
     color_on = false;
     for(size_t i = 0; i < buf_len; i++) {
       if(isgraph(buf[i])) {
-        if(ansi_color && !color_on)
-          fputs(A_YLW, stdout);
-        color_on = true;
-
+        SET_COLOR(A_YLW);
         printf("%c", buf[i]);
       } else {
-        if(ansi_color && color_on)
-          fputs(A_NONE, stdout);
-        color_on = false;
-
+        END_COLOR;
         printf(".");
       }
     }
-    if(ansi_color && color_on)
-      fputs(A_NONE, stdout);
+    END_COLOR;
 
     // Print trailing gap
     if(buf_len + offset < line_bytes) {
@@ -139,19 +137,14 @@ static void hex_dump(size_t line_addr, size_t buf_addr, uint8_t *buf, size_t buf
       }
     }
 
-    if(ansi_color)
-      fputs(A_GRN "|" A_NONE, stdout);
-    else
-      fputs("|", stdout);
-
+    fputs(cfg->ansi_color ? A_GRN " |" A_NONE : " |", stdout);
   }
   
   printf("\n");
 }
 
 
-#define DEFAULT_INDENT  4
-#define ADDR_LEN        4
+// ******************** Bulk dump operations ********************
 
 /*
 Dump the contents of a buffer to stdout in hex format
@@ -159,18 +152,18 @@ Dump the contents of a buffer to stdout in hex format
 This dumps lines of data with the offset, hex values, and printable ASCII
 
 Args:
-  buf        : Buffer to dump
-  buf_len    : Length of buf data
-  show_ascii : Show table of printable ASCII on right side
-  ansi_color : Print dump with color output
+  buf:      Buffer to dump
+  buf_len:  Length of buf data
+  buf_addr: Address for start of buf
+  cfg:      Configuration settings for dump format
 */
-void dump_array_ex(uint8_t *buf, size_t buf_len, bool show_ascii, bool ansi_color) {
+void dump_array_ex(const uint8_t *buf, size_t buf_len, size_t buf_addr, const DumpArrayCfg *cfg) {
   size_t buf_pos, buf_count;
   size_t line_addr, line_offset;
-  unsigned line_bytes = 16;
+  const size_t line_bytes = 16;
 
-  line_addr = 0;
-  line_offset = 0;
+  line_addr = buf_addr & ~(line_bytes-1);
+  line_offset = buf_addr - line_addr;
 
   buf_pos = 0;
 
@@ -178,8 +171,7 @@ void dump_array_ex(uint8_t *buf, size_t buf_len, bool show_ascii, bool ansi_colo
     while(buf_pos < buf_len) {
       buf_count = (buf_len - buf_pos) < line_bytes ? buf_len - buf_pos : line_bytes;
       buf_count -= line_offset;
-      hex_dump(line_addr, line_addr + line_offset, &buf[buf_pos], buf_count,
-              DEFAULT_INDENT, ADDR_LEN, show_ascii, ansi_color);
+      hex_dump_line(line_addr, line_addr + line_offset, &buf[buf_pos], buf_count, cfg);
 
       buf_pos += buf_count;
       if(buf_count + line_offset == line_bytes) // Increment address after full line
@@ -202,30 +194,44 @@ Args:
   buf     : Buffer to dump
   buf_len : Length of buf data
 */
-void dump_array(uint8_t *buf, size_t buf_len) {
-  dump_array_ex(buf, buf_len, /*show_ascii*/ true, /*ansi_color*/ true);
+void dump_array(const uint8_t *buf, size_t buf_len) {
+  DumpArrayCfg cfg = {
+    .show_ascii = true,
+    .ansi_color = true,
+    .indent     = 4
+  };
+
+  dump_array_ex(buf, buf_len, 0, &cfg);
 }
 
+
+// ******************** Line by line dump operations ********************
+// Use these for systems with limited memory for stdout buffer
 
 /*
 Prepare for line-by-line dump
 
 Args:
-  state:      State to track dump progress
-  buf:        Buffer to dump
-  buf_len:    Length of buf data
-  show_ascii: Show table of printable ASCII on right side
-  ansi_color: Print dump with color output
+  state:    State to track dump progress
+  buf:      Buffer to dump
+  buf_len:  Length of buf data
+  buf_addr: Address for start of buf
+  cfg:      Configuration settings for dump format
 */
-void dump_array_init(DumpArrayState *state, uint8_t *buf, size_t buf_len,
-                      bool show_ascii, bool ansi_color) {
+void dump_array_init(DumpArrayState *state, uint8_t *buf, size_t buf_len, size_t buf_addr,
+                     DumpArrayCfg *cfg) {
+
+  const size_t line_bytes = 16;
 
   memset(state, 0, sizeof(*state));
 
-  state->buf = buf;
-  state->buf_len = buf_len;
-  state->show_ascii = show_ascii;
-  state->ansi_color = ansi_color;
+  state->buf      = buf;
+  state->buf_len  = buf_len;
+  state->buf_addr = buf_addr;
+  state->cfg      = *cfg;
+
+  state->line_addr   = buf_addr & ~(line_bytes-1);
+  state->line_offset = buf_addr - state->line_addr;
 }
 
 
@@ -239,7 +245,7 @@ Returns:
   true when dump is still active
 */
 bool dump_array_line(DumpArrayState *state) {
-  unsigned line_bytes = 16;
+  const size_t line_bytes = 16;
   size_t remaining = state->buf_len - state->buf_pos;
   size_t buf_count = remaining < line_bytes ? remaining : line_bytes; // Bytes for this line
 
@@ -248,9 +254,8 @@ bool dump_array_line(DumpArrayState *state) {
 
   buf_count -= state->line_offset;
 
-  hex_dump(state->line_addr, state->line_addr + state->line_offset,
-          &state->buf[state->buf_pos], buf_count,
-          DEFAULT_INDENT, ADDR_LEN, state->show_ascii, state->ansi_color);
+  hex_dump_line(state->line_addr, state->line_addr + state->line_offset,
+          &state->buf[state->buf_pos], buf_count, &state->cfg);
 
   state->buf_pos += buf_count;
   if(buf_count + state->line_offset == line_bytes) // Increment address after full line
