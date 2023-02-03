@@ -33,7 +33,7 @@ void dump_register(const RegLayout * const layout, uint32_t value, uint8_t left_
 
   // Name
   bprintf("%*s" A_BMAG "%s" A_NONE " = 0x%0*" PRIX32 "\n", left_pad, "", layout->name,
-          nibbles, value & ((1ul << layout->reg_bits)-1));
+          nibbles, (uint32_t)(value & ((1ul << layout->reg_bits)-1)));
 
   left_pad += 2;
 

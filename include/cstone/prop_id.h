@@ -293,9 +293,9 @@ internal system objects in need of an ID that should be distinct from other prop
 #define SP4 0
 
 // Mask for a single field level
-#define PROP_MASK(level)        (0xFFul << ((4-(level))*8))
-#define PROP_ARR_MASK(level)    (0x7Ful << ((4-(level))*8))
-#define PROP_PREFIX_MASK(level) ((0xFFFFFFFFul << ((4-(level))*8)) & 0xFFFFFFFFul)
+#define PROP_MASK(level)        ((uint32_t)(0xFFul << ((4-(level))*8)))
+#define PROP_ARR_MASK(level)    ((uint32_t)(0x7Ful << ((4-(level))*8)))
+#define PROP_PREFIX_MASK(level) ((uint32_t)((0xFFFFFFFFul << ((4-(level))*8)) & 0xFFFFFFFFul))
 
 // Extract mask from a composed property
 #define PROP_GET_MASK(p)  (~((((p) & P1_MSK) == P1_MSK ? P1_MSK : 0) | \
@@ -308,16 +308,16 @@ internal system objects in need of an ID that should be distinct from other prop
 //#define PROP_PREFIX(p, level) ((p) & PROP_PREFIX_MASK(level))
 
 // Define array fields
-#define P1_ARR(index)  ((0x80ul << SP1) | ((index) << SP2))
-#define P2_ARR(index)  ((0x80ul << SP2) | ((index) << SP3))
-#define P3_ARR(index)  ((0x80ul << SP3) | ((index) << SP4))
+#define P1_ARR(index)  ((uint32_t)(0x80ul << SP1) | ((index) << SP2))
+#define P2_ARR(index)  ((uint32_t)(0x80ul << SP2) | ((index) << SP3))
+#define P3_ARR(index)  ((uint32_t)(0x80ul << SP3) | ((index) << SP4))
 
 // Test for presence of an array field
 #define PROP_HAS_ARRAY(p)       (((p) & 0x80808000ul) != 0)
 #define PROP_FIELD_IS_ARRAY(p)  (((p) & 0x80ul) != 0)
 
 // Strip upper bit from array fields
-#define PROP_FROM_ARRAY(p) ((p) & ~0x80808000ul)
+#define PROP_FROM_ARRAY(p) ((uint32_t)((p) & ~0x80808000ul))
 
 
 #define PROP_SET_INDEX(p, level, index)  \

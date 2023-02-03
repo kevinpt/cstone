@@ -31,7 +31,6 @@ set(CSTONE_SOURCE_COMMON
     src/rtc_soft.c
     src/dump_reg.c
     src/profile.c
-    src/obj_metadata.c
     src/util/histogram.c
     src/util/bsd_string.c
     src/util/search.c
@@ -52,6 +51,7 @@ set(CSTONE_SOURCE_COMMON
 )
 
 set(CSTONE_SOURCE_STM32
+    src/obj_metadata.c  # FIXME: Move to platform
     src/platform/stm32/core_stm32.c
     src/platform/stm32/uart_stm32.c
     src/platform/stm32/gpio_stm32.c

@@ -47,8 +47,9 @@ extern ErrorLog   g_error_log;
 extern mpPoolSet  g_pool_set;
 extern LogDB      g_log_db;
 
-
+#ifdef PLATFORM_EMBEDDED
 extern const ObjectMetadata g_metadata;
+#endif
 
 static int32_t cmd_build(uint8_t argc, char *argv[], void *eval_ctx) {
   printf("  %s\n", g_build_time);
@@ -57,10 +58,12 @@ static int32_t cmd_build(uint8_t argc, char *argv[], void *eval_ctx) {
   printf(PAD_STR": %s\n", "Firmware", APP_VERSION);
   printf(PAD_STR": %s\n", "FreeRTOS", tskKERNEL_VERSION_NUMBER);
 
+#ifdef PLATFORM_EMBEDDED
   // Metadata info
   printf(PAD_STR": %08"PRIx32"\n", "Git SHA", g_metadata.git_sha);
   printf(PAD_STR": %s\n", "Type", g_metadata.debug_build ? A_RED "Debug" A_NONE : A_GRN "Release" A_NONE);
   validate_metadata();
+#endif
 
   return 0;
 }
@@ -482,12 +485,14 @@ static int32_t cmd_free(uint8_t argc, char *argv[], void *eval_ctx) {
     printf("\tUsed:   %6sB\n", TO_SI(heap_size - heap_free));
     printf("\tFree:   %6sB\n", TO_SI(heap_free));
 
+#ifdef PLATFORM_EMBEDDED
     size_t stack_size = sys_stack_size();
     size_t stack_free = sys_stack_min_free();
     bputs("\nSys. stack:");
     printf("\tTotal:  %6sB\n", TO_SI(stack_size));
     printf("\tUsed:   %6sB\n", TO_SI(stack_size - stack_free));
     printf("\tFree:   %6sB\n", TO_SI(stack_free));
+#endif
 
     bputs("\n--= Memory pools =--");
     mp_summary(&g_pool_set);

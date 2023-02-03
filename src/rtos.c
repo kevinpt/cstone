@@ -270,6 +270,8 @@ size_t heap_os_allocated_objs(void) {
   return stats.xNumberOfSuccessfulAllocations - stats.xNumberOfSuccessfulFrees;
 }
 
+// FIXME: Move to stm32 platform code
+#ifndef PLATFORM_HOSTED
 
 // Linker symbols
 extern uint32_t _estack;
@@ -307,4 +309,4 @@ size_t sys_stack_min_free(void) {
 
   return top_stack - start_stack;
 }
-
+#endif

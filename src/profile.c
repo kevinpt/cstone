@@ -20,6 +20,23 @@
 #  define COUNT_OF(a) (sizeof(a) / sizeof(*(a)))
 #endif
 
+// FIXME: Move to cstone common header
+// Newlib doesn't support printf() %zu specifier so we detect the target platform
+#if defined __linux__ || defined __APPLE__ || defined _WIN32  // System libc for full OS env.
+#  define PRIuz "zu"
+#  define PRIXz "zX"
+// Baremetal:
+#elif defined __arm__ // Newlib on ARM32
+// arm-none-eabi has size_t as "unsigned int" but uint32_t is "long unsigned int". Crazy
+#  define PRIuz "u"
+#  define PRIXz "X"
+#elif defined __aarch64__ // Newlib on ARM64
+#  define PRIuz "lu"
+#  define PRIXz "lX"
+#else
+#  error "Unknown target platform"
+#endif
+
 
 typedef struct ProfileItem {
   struct ProfileItem *next;
@@ -110,7 +127,7 @@ void profile_calibrate(void) {
   s_prof_state.fixed_overhead = p->min_elapsed;
 
   DPRINT("Fixed overhead: %"PRIu32" cycles,  %"PRIu32" ns", s_prof_state.fixed_overhead, 
-          s_prof_state.fixed_overhead * 1000000ul / (s_prof_state.timer_clock_hz/1000));
+          (uint32_t)(s_prof_state.fixed_overhead * 1000000ul / (s_prof_state.timer_clock_hz/1000)));
 
   profile_delete(id);
 }
@@ -226,7 +243,7 @@ static void profile__report(ProfileItem *p, bool heading) {
     puts(    u8"  ───────────────────────────────────────────────────" A_NONE);
   }
 
-  printf("  %-12s %5u", p->name, p->stats.count);
+  printf("  %-12s %5"PRIuz, p->name, p->stats.count);
 
   // Select scale factor for fixed-point conversion
   uint32_t fp_exp, fp_scale;
