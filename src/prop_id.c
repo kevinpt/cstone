@@ -431,6 +431,29 @@ uint32_t prop_parse_name(const char *name) {
 
 
 /*
+Convert a property name or string ID to its numeric representation
+
+This requires USE_PROP_ID_REV_HASH to be defined.
+ID strings must be of the form "P[0-9A-Z]{8,8}"
+
+Args:
+  name: Property name or ID to parse
+
+Returns:
+  Parsed property value on success; 0 on failure
+*/
+uint32_t prop_parse_any(const char *id_name) {
+  uint32_t prop = prop_parse_id(id_name);
+
+  // Otherwise, check if it's a full name
+  if(prop == 0)
+    prop = prop_parse_name(id_name);
+
+  return prop;
+}
+
+
+/*
 Check a property for valid encoding
 
 Args:

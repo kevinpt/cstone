@@ -599,16 +599,18 @@ static int32_t cmd_property(uint8_t argc, char *argv[], void *eval_ctx) {
   state.report_errors = true;
 
   int c;
+  bool dump_blob = false;
   char *prop_name  = NULL;
   const char *prop_value = NULL;
   bool list_all = (argc == 1);
 
-  while((c = getopt_r(argv, "h", &state)) != -1) {
+  while((c = getopt_r(argv, "dh", &state)) != -1) {
     switch(c) {
+    case 'd': dump_blob = true; break;
     case 'h':
       puts("List all properties:  PROPerty");
-      puts("List named property:  PROPerty [name]");
-      puts("Set property          PROPerty <name>=<value>");
+      puts("List named property:  PROPerty [-d] [name]");
+      puts("Set property:         PROPerty <name>=<value>");
       return 0;
       break;
 
@@ -641,6 +643,7 @@ static int32_t cmd_property(uint8_t argc, char *argv[], void *eval_ctx) {
   if(state.optind < argc) { // Non-option args
     prop_name = argv[state.optind++];
   }
+  printf("optind: %d  argc: %d  prop_name: %p\n", state.optind, argc, prop_name);
 
   if(!prop_name)
     return -1;
@@ -704,7 +707,7 @@ static int32_t cmd_property(uint8_t argc, char *argv[], void *eval_ctx) {
     }
   }
 
-  if(prop == 0 || !prop_print(&g_prop_db, prop))
+  if(prop == 0 || !prop_print(&g_prop_db, prop, dump_blob))
     puts("Invalid property");
 
 

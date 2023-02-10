@@ -413,8 +413,9 @@ M(P2, CON,      5) \
 M(P2, USB,      6) \
 M(P2, SPI,      7) \
 M(P2, I2C,      8) \
-M(P2, BUTTON,   9) \
+M(P2, CRON,     9) \
 M(P2, PRNG,     10) \
+M(P2, BUTTON,   11) \
 M(P2, R127,     127) \
 \
 M(P3, INFO,     1) \
@@ -425,6 +426,8 @@ M(P3, PROP,     5) \
 M(P3, TARGET,   6) \
 M(P3, LIMIT,    7) \
 M(P3, BUILD,    8) \
+M(P3, CRON,     9) \
+M(P3, MEM,      10) \
 M(P3, R127,     127) \
 \
 M(P4, VALUE,    1) \
@@ -449,6 +452,8 @@ M(P4, SIZE,     19) \
 M(P4, LOC,      20) \
 M(P4, PRESS,    21) \
 M(P4, RELEASE,  22) \
+M(P4, ON,       23) \
+M(P4, OFF,      24) \
 M(P4, R127,     127) \
 \
 M(P1, MSK, 0xFFul) \
@@ -505,7 +510,8 @@ struct PropNamespace {
 
 #define P_SYS_PRNG_LOCAL_VALUE        (P1_SYS | P2_PRNG | P3_LOCAL | P4_VALUE)
 #define P_SYS_STORAGE_INFO_COUNT      (P1_SYS | P2_STORAGE | P3_INFO | P4_COUNT)
-
+#define P_SYS_CRON_LOCAL_VALUE        (P1_SYS | P2_CRON | P3_LOCAL | P4_VALUE)
+#define P_ERROR_SYS_MEM_ACCESS        (P1_ERROR | P2_SYS | P3_MEM | P4_ACCESS)
 
 #ifdef __cplusplus
 extern "C" {
@@ -517,6 +523,7 @@ void prop_add_namespace(PropNamespace *ns);
 char *prop_get_name(uint32_t prop, char *buf, size_t buf_size);
 uint32_t prop_parse_id(const char *id);
 uint32_t prop_parse_name(const char *name);
+uint32_t prop_parse_any(const char *id_name);
 bool prop_is_valid(uint32_t prop, bool allow_mask);
 bool prop_has_mask(uint32_t prop);
 bool prop_match(uint32_t prop, uint32_t masked_prop);

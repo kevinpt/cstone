@@ -31,6 +31,7 @@ set(CSTONE_SOURCE_COMMON
     src/rtc_soft.c
     src/dump_reg.c
     src/profile.c
+    src/cron_events.c
     src/util/histogram.c
     src/util/bsd_string.c
     src/util/search.c

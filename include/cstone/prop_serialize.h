@@ -15,6 +15,8 @@ int uint32_decode(uint32_t *n, uint8_t *buf);
 int string_encode(char *str, uint8_t *buf, size_t buf_size);
 int string_decode(char *str, size_t str_size, uint8_t *buf);
 
+int blob_encode(uint8_t *data, size_t data_size, uint8_t *buf, size_t buf_size);
+
 unsigned prop_encoded_bytes(uint32_t prop, PropDBEntry *entry);
 int prop_encode(uint32_t prop, PropDBEntry *entry, uint8_t *buf, size_t buf_size);
 int prop_decode(uint32_t *prop, PropDBEntry *entry, uint8_t *buf);

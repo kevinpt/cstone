@@ -111,6 +111,8 @@ static inline bool prop_db_update_pending(PropDB *db) { return db->persist_updat
 
 // ******************** Retrieval ********************
 bool prop_set(PropDB *db, uint32_t prop, PropDBEntry *value, uint32_t source);
+#define prop_del(db, prop)  prop_set((db), (prop), NULL, 0)
+
 bool prop_set_str(PropDB *db, uint32_t prop, char *value, uint32_t source);
 bool prop_set_int(PropDB *db, uint32_t prop, int32_t value, uint32_t source);
 bool prop_set_uint(PropDB *db, uint32_t prop, uint32_t value, uint32_t source);
@@ -129,7 +131,7 @@ static inline bool prop_db_dealloc(PropDB *db, void *element) {
 }
 
 size_t prop_db_count(PropDB *db);
-bool prop_print(PropDB *db, uint32_t prop);
+bool prop_print(PropDB *db, uint32_t prop, bool dump_blob);
 void prop_db_dump(PropDB *db);
 
 bool prop_db_serialize(PropDB *db, LogDBBlock **block);

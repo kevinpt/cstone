@@ -6,15 +6,13 @@
 
 typedef struct {
   uint32_t  id;       // Prop id for type of message
-// FIXME: Restore union with updated ARM g++
-//  union {
+
+  union {
     uint32_t source;  // Sender of message
-/*
     uint32_t param32;
     uint16_t param16[2];
-
   };
-*/
+
   uintptr_t payload;  // Optional value associated with the message
   size_t    payload_size; // payload is a pointer when size > 0
 } UMsg;

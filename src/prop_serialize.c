@@ -134,7 +134,7 @@ int uint32_decode(uint32_t *n, uint8_t *buf) {
 }
 
 
-static unsigned string_encoded_bytes(char *str, size_t str_len) {
+static inline unsigned string_encoded_bytes(char *str, size_t str_len) {
   if(str_len == 0)
     str_len = strlen(str);
   unsigned num_bytes = varint_encoded_bytes(str_len);
@@ -180,6 +180,28 @@ int string_decode(char *str, size_t str_size, uint8_t *buf) {
 }
 
 
+static inline unsigned blob_encoded_bytes(uint8_t *data, size_t data_size) {
+  unsigned num_bytes = varint_encoded_bytes(data_size);
+
+  num_bytes += data_size;
+
+  return num_bytes;
+}
+
+
+int blob_encode(uint8_t *data, size_t data_size, uint8_t *buf, size_t buf_size) {
+  unsigned num_bytes = blob_encoded_bytes(data, data_size);
+  if(num_bytes > buf_size)
+    return -num_bytes;
+
+  buf += varint_encode(data_size, buf, buf_size);
+  memcpy(buf, data, data_size);
+
+  return num_bytes;
+}
+
+
+
 unsigned prop_encoded_bytes(uint32_t prop, PropDBEntry *entry) {
   unsigned num_bytes = sizeof(prop) + 1; // Prop ID + kind byte
 
@@ -193,6 +215,7 @@ unsigned prop_encoded_bytes(uint32_t prop, PropDBEntry *entry) {
     break;
 
   case P_KIND_STRING:
+  case P_KIND_BLOB:
     num_bytes += varint_encoded_bytes(entry->size);
     num_bytes += entry->size;
     break;
@@ -232,6 +255,10 @@ int prop_encode(uint32_t prop, PropDBEntry *entry, uint8_t *buf, size_t buf_size
 
   case P_KIND_STRING:
     string_encode((char *)entry->value, buf, buf_size);
+    break;
+
+  case P_KIND_BLOB:
+    blob_encode((uint8_t *)entry->value, entry->size, buf, buf_size);
     break;
 
   default:
@@ -289,6 +316,28 @@ int prop_decode(uint32_t *prop, PropDBEntry *entry, uint8_t *buf) {
     } else {
       entry->value = (uintptr_t)NULL;
     }
+    break;
+  }
+
+  case P_KIND_BLOB:
+  {
+    // Get length
+    encode_size = varint_decode(&val, buf);
+    entry->size = val;
+    buf += encode_size;
+    num_bytes += encode_size + val;
+
+    char *data = mp_alloc(&g_pool_set, entry->size, NULL);
+    if(data) {
+      memcpy(data, (char *)buf, entry->size);
+      entry->value = (uintptr_t)data;
+      //printf("## DEC BLB: %u\n", entry->size);
+    } else {
+      entry->value = (uintptr_t)NULL;
+    }
+
+    // All blob data is "sytem origin" so we don't want users overwriting it from console
+    entry->protect = true;
     break;
   }
 

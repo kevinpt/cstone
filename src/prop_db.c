@@ -9,6 +9,7 @@
 #include "util/dhash.h"
 #include "util/mempool.h"
 #include "util/term_color.h"
+#include "util/hex_dump.h"
 
 #include "build_config.h"
 #include "cstone/platform.h"
@@ -202,7 +203,7 @@ bool prop_set(PropDB *db, uint32_t prop, PropDBEntry *value, uint32_t source) {
     .length = sizeof(uint32_t)
   };
 
-  if(value && value->kind == P_KIND_STRING && value->size == 0) {
+  if(value && value->kind == P_KIND_STRING && value->size == 0) { // Missing string length
     value->size = strlen((char *)value->value);
   }
 
@@ -221,19 +222,25 @@ bool prop_set(PropDB *db, uint32_t prop, PropDBEntry *value, uint32_t source) {
 //        printf(">> EPHEMERAL P%08lX\n", prop);
       }
 
-    } else {
-      status = dh_remove(&db->hash, key, NULL);
+    } else {  // No value: Remove prop from hash
+      PropDBEntry removed;
+      status = dh_remove(&db->hash, key, &removed);
+      if(status) {
+        if(removed.persist) // Log needs to be updated
+          db->persist_updated = true;
+        prop_item_destroy(key, &removed, db);
+      }
     }
   UNLOCK();
 
-  if(db->msg_hub) {
+  if(db->msg_hub) { // Report change to this prop
     // Send message
     UMsg msg = {
       .id     = prop,
       .source = source
     };
 
-    if(value->kind == P_KIND_UINT || value->kind == P_KIND_INT) {
+    if(value && (value->kind == P_KIND_UINT || value->kind == P_KIND_INT)) {
       msg.payload = value->value;
     }
 
@@ -365,7 +372,8 @@ static void prop__print_entry(uint32_t prop, PropDBEntry *entry) {
   case P_KIND_UINT:   printf("%" PRIu32 " (%08" PRIX32 ")", (uint32_t)entry->value, (uint32_t)entry->value); break;
   case P_KIND_INT:    printf("%" PRId32, (int32_t)entry->value); break;
   case P_KIND_STRING: printf("'%s'", (char *)entry->value); break;
-  default: puts("?"); break;
+  case P_KIND_BLOB:   printf("Blob %"PRIuz, entry->size); break;
+  default:            fputs("?", stdout); break;
   }
 
   if(entry->persist)
@@ -374,13 +382,18 @@ static void prop__print_entry(uint32_t prop, PropDBEntry *entry) {
     putnl();
 }
 
-bool prop_print(PropDB *db, uint32_t prop) {
+
+bool prop_print(PropDB *db, uint32_t prop, bool dump_blob) {
   PropDBEntry entry;
 
   bool exists = prop_get(db, prop, &entry);
 
-  if(exists)
+  if(exists) {
     prop__print_entry(prop, &entry);
+
+    if(dump_blob && entry.kind == P_KIND_BLOB)
+      dump_array((uint8_t *)entry.value, entry.size);
+  }
 
   return exists;
 }
