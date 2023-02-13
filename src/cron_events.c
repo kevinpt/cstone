@@ -785,13 +785,18 @@ int32_t cmd_cron(uint8_t argc, char *argv[], void *eval_ctx) {
       puts("Success");
 
   } else {  // Print summary
-    puts(A_YLW "     Schedule          Flags      Event                 End event      Duration");
-    hline(u8"─", 77, 2);
-    LOCK();
-    for(CronEntry *cur = s_cron_entry_list; cur; cur = cur->next) {
-      print_cron_def(&cur->def);
+    if(!s_cron_entry_list) {
+      puts("  No cron entries");
+
+    } else {
+      puts(A_YLW "     Schedule          Flags      Event                 End event      Duration");
+      hline(u8"─", 77, 2);
+      LOCK();
+      for(CronEntry *cur = s_cron_entry_list; cur; cur = cur->next) {
+        print_cron_def(&cur->def);
+      }
+      UNLOCK();
     }
-    UNLOCK();
   }
 
   return 0;

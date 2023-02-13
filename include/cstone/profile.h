@@ -20,9 +20,11 @@ void profile_delete_all(void);
 void profile_start(uint32_t id);
 void profile_stop(uint32_t id);
 void profile_reset(uint32_t id);
+void profile_reset_all(void);
 
 void profile_report(uint32_t id);
 void profile_report_all(void);
+int32_t cmd_profile(uint8_t argc, char *argv[], void *eval_ctx);
 
 #ifdef __cplusplus
 }

@@ -13,6 +13,7 @@
 #include "util/stats.h"
 #include "util/mempool.h"
 #include "util/num_format.h"
+#include "util/getopt_r.h"
 
 #include "cstone/profile.h"
 
@@ -222,10 +223,8 @@ void profile_stop(uint32_t id) {
 }
 
 
-void profile_reset(uint32_t id) {
-  ProfileItem *p = profile__find(id);
-  if(!p) return;
 
+static void profile__reset(ProfileItem *p) {
   p->active = false;
   p->start_time = 0;
   stats_init(&p->stats, 0);
@@ -234,8 +233,37 @@ void profile_reset(uint32_t id) {
 }
 
 
+void profile_reset(uint32_t id) {
+  ProfileItem *p = profile__find(id);
+  if(!p) return;
+  profile__reset(p);
+}
+
+
+void profile_reset_all(void) {
+  for(ProfileItem *cur = s_prof_state.profile_list; cur; cur = cur->next) {
+    profile__reset(cur);
+  }
+}
+
+
 #define US_SCALE  1000000ul
 #define NS_SCALE  1000000000ul
+
+static uint32_t select_fixed_scaling(uint32_t max_val, int *fp_exp ) {
+  uint32_t fp_scale;
+
+  if((max_val * NS_SCALE) / NS_SCALE == max_val) { // Scale to nsecs
+    *fp_exp = -9;
+    fp_scale = NS_SCALE;
+  } else { // Scale to usecs
+    *fp_exp = -6;
+    fp_scale = US_SCALE;
+  }
+
+  return fp_scale;
+}
+
 
 static void profile__report(ProfileItem *p, bool heading) {
   if(heading) {
@@ -246,21 +274,16 @@ static void profile__report(ProfileItem *p, bool heading) {
   printf("  %-12s %5"PRIuz, p->name, p->stats.count);
 
   // Select scale factor for fixed-point conversion
-  uint32_t fp_exp, fp_scale;
-  if((p->max_elapsed * NS_SCALE) / NS_SCALE == p->max_elapsed) { // Scale to nsecs
-    fp_exp = -9;
-    fp_scale = NS_SCALE;
-  } else { // Scale to usecs
-    fp_exp = -6;
-    fp_scale = US_SCALE;
-  }
+  uint32_t fp_scale;
+  int fp_exp;
+  fp_scale = select_fixed_scaling(p->max_elapsed > 0 ? p->max_elapsed : p->min_elapsed, &fp_exp);
 
   uint32_t tvals[3] = {stats_mean(&p->stats), p->min_elapsed, p->max_elapsed};
 
   for(unsigned i = 0; i < COUNT_OF(tvals); i++) {
     char si_buf[10]; // 3 + "." + 2 + " X" = 8
     // Convert cycles to scaled time
-    uint32_t fp_time = tvals[i] * fp_scale / s_prof_state.timer_clock_hz;
+    uint32_t fp_time = (uint64_t)tvals[i] * fp_scale / s_prof_state.timer_clock_hz;
     to_si_value(fp_time, fp_exp, si_buf, sizeof si_buf, /*frac_places*/2, SIF_GREEK_MICRO);
     printf(" %9ss", si_buf);
   }
@@ -285,5 +308,56 @@ void profile_report_all(void) {
     first_profile = false;
     cur = cur->next;
   }
+}
+
+
+
+
+
+int32_t cmd_profile(uint8_t argc, char *argv[], void *eval_ctx) {
+  GetoptState state = {.report_errors = true};
+  int c;
+
+  bool reset = false;
+
+  while((c = getopt_r(argv, "rh", &state)) != -1) {
+    switch(c) {
+    case 'r': reset = true; break;
+
+    case 'h':
+      puts("PROFile [-r] [-h]");
+      return 0;
+      break;
+
+    default:
+    case ':':
+    case '?':
+      return -3;
+      break;
+    }
+  }
+
+  if(reset) {
+    puts("Reset profile stats");
+    profile_reset_all();
+
+  } else {
+    char si_buf[10];
+    to_si_value(s_prof_state.timer_clock_hz, 0, si_buf, sizeof si_buf, /*frac_places*/1, SIF_SIMPLIFY);
+    printf("Timer freq: %sHz\n", si_buf);
+
+    //uint32_t fp_scale;
+    int fp_exp;
+    select_fixed_scaling(UINT32_MAX, &fp_exp);
+    //printf("## fp_scale: %"PRIu32"  fp_exp: %d\n", fp_scale, fp_exp);
+
+    uint32_t fp_time = UINT32_MAX / s_prof_state.timer_clock_hz;
+    to_si_value(fp_time, fp_exp, si_buf, sizeof si_buf, /*frac_places*/2, SIF_GREEK_MICRO);
+    printf("Max profile interval: %ss\n\n", si_buf);
+
+    profile_report_all();
+  }
+
+  return 0;
 }
 
