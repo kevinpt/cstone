@@ -65,6 +65,11 @@ typedef struct {
   } while(0)
 
 
+#define range_init_empty(rng, strt, len) do { \
+  range_init(rng, strt, len); \
+  *(strt) = '\0'; \
+  } while(0)
+
 // Span of the full range ignoring NUL chars
 #define range_size(r) ((r)->end - (r)->start)
 
