@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 // Newlib has strlcpy() and strlcat() so we inhibit a duplicate declaration
-#ifdef linux
+#ifdef __linux__
 size_t strlcpy(char *dst, const char *src, size_t size);
 size_t strlcat(char *dst, const char *src, size_t size);
 #endif

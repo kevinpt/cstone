@@ -76,6 +76,21 @@ static inline bool is_power_of_2(size_t n) {
 }
 
 
+// ******************** Lock operations ********************
+
+#if defined USE_PTHREAD_LOCK || defined USE_ATOMIC_SPINLOCK
+#  define POOLSET_LOCK_INIT(pset) LOCK_INIT(&pset->lock)
+#  define LOCK_POOLS(pset)        LOCK_TAKE(&pset->lock)
+#  define UNLOCK_POOLS(pset)      LOCK_RELEASE(&pset->lock)
+
+#else
+// No lock object
+#  define POOLSET_LOCK_INIT(pset)
+#  define LOCK_POOLS(pset)        LOCK_TAKE(0)
+#  define UNLOCK_POOLS(pset)      LOCK_RELEASE(0)
+#endif
+
+
 
 // ******************** Internal link operations ********************
 
@@ -84,10 +99,6 @@ static inline mpPool *mp__next(mpPool *pool) {
   return pool->next;
 }
 
-// Get previous pool
-static inline mpPool *mp__prev(mpPoolSet *pool_set, mpPool *pool) {
-  return LL_NODE(ll_slist_find_prev(pool_set->pools, pool), mpPool, next);
-}
 
 // Link a new pool to its predecessor
 static inline void mp__link(mpPool *prev, mpPool *pool) {
@@ -130,12 +141,16 @@ void mp_init_pool_set(mpPoolSet *pool_set) {
   if(!s_sys_pool_set)
     s_sys_pool_set = pool_set;
 
-#ifdef USE_MP_COLLECT_STATS
-//  pool_set->hist = histogram_init(20, 0, 50, /* track_overflow */ true);
-#endif
+  POOLSET_LOCK_INIT(pool_set);
 }
 
 
+/*
+Get system default pool set
+
+Returns:
+  System wide pool set
+*/
 mpPoolSet *mp_sys_pools(void) {
   return s_sys_pool_set;
 }
@@ -143,6 +158,13 @@ mpPoolSet *mp_sys_pools(void) {
 
 
 #ifdef USE_MP_COLLECT_STATS
+/*
+Add a histogram object to a pool set
+
+Args:
+  pool_set: Set object to work on
+  hist:     Histogram object to add
+*/
 void mp_add_histogram(mpPoolSet *pool_set, Histogram *hist) {
   pool_set->hist = hist;
 }
@@ -159,6 +181,7 @@ Returns:
   true if the pool was released
 */
 bool mp_release_pool(mpPoolSet *pool_set, mpPool *pool, bool release_in_use) {
+  LOCK_POOLS(pool_set);
   bool release = release_in_use || !mp_pool_in_use(pool);
 
   if(release) {
@@ -167,6 +190,7 @@ bool mp_release_pool(mpPoolSet *pool_set, mpPool *pool, bool release_in_use) {
     if(!(pool->flags & MP_FLAG_STATIC)) // Deallocate dynamic pools
       free(pool);
   }
+  UNLOCK_POOLS(pool_set);
 
   return release;
 }
@@ -190,7 +214,7 @@ bool mp_release_pool_set(mpPoolSet *pool_set, bool release_in_use) {
   prev = NULL;
   cur = pool_set->pools;
 
-  ENTER_CRITICAL();
+  LOCK_POOLS(pool_set);
     while(cur) {
       release = release_in_use || !mp_pool_in_use(cur);
 
@@ -214,7 +238,7 @@ bool mp_release_pool_set(mpPoolSet *pool_set, bool release_in_use) {
         release_all = false;
       }
     };
-  EXIT_CRITICAL();
+  UNLOCK_POOLS(pool_set);
 #ifdef USE_MP_COLLECT_STATS
   if(pool_set->hist) {
     free(pool_set->hist);
@@ -375,7 +399,7 @@ void mp_add_pool(mpPoolSet *pool_set, mpPool *new_pool) {
 #endif
 
 
-  ENTER_CRITICAL();
+  LOCK_POOLS(pool_set);
     if(!pool_set->pools) { // Empty pool set
       pool_set->pools = new_pool;
 
@@ -388,7 +412,7 @@ void mp_add_pool(mpPoolSet *pool_set, mpPool *new_pool) {
           } else { // Start of list
             mp__link_head(pool_set, new_pool);
           }
-          EXIT_CRITICAL();
+          UNLOCK_POOLS(pool_set);
           return;
         }
         prev = cur;
@@ -397,7 +421,7 @@ void mp_add_pool(mpPoolSet *pool_set, mpPool *new_pool) {
       // Reached end without inserting pool
       mp__link(prev, new_pool);
     }
-  EXIT_CRITICAL();
+  UNLOCK_POOLS(pool_set);
 }
 
 
@@ -441,7 +465,7 @@ void *mp_alloc(mpPoolSet *pool_set, size_t size, size_t *alloc_size) {
 
   if(!pool_set) return NULL;
 
-  ENTER_CRITICAL();
+  LOCK_POOLS(pool_set);
     // Search for non-empty pool with elements >= size
     for(cur = pool_set->pools; cur; cur = mp__next(cur)) {
       if(cur->free_list && cur->element_size >= size && !(cur->flags & MP_FLAG_DISABLED)) {
@@ -449,7 +473,7 @@ void *mp_alloc(mpPoolSet *pool_set, size_t size, size_t *alloc_size) {
         break;
       }
     }
-  EXIT_CRITICAL();
+  UNLOCK_POOLS(pool_set);
 
 #ifdef USE_MP_COLLECT_STATS
   if(alloc)
@@ -482,7 +506,7 @@ void *mp_alloc_aligned(mpPoolSet *pool_set, size_t size, size_t *alloc_size, siz
 
   if(!pool_set) return NULL;
 
-  ENTER_CRITICAL();
+  LOCK_POOLS(pool_set);
     // Search for non-empty pool with elements >= size
     for(cur = pool_set->pools; cur; cur = mp__next(cur)) {
       if(cur->free_list && cur->element_size >= size && !(cur->flags & MP_FLAG_DISABLED)) {
@@ -494,7 +518,7 @@ void *mp_alloc_aligned(mpPoolSet *pool_set, size_t size, size_t *alloc_size, siz
         }
       }
     }
-  EXIT_CRITICAL();
+  UNLOCK_POOLS(pool_set);
 
 #ifdef USE_MP_COLLECT_STATS
   if(alloc)
@@ -528,7 +552,7 @@ void *mp_alloc_best_effort(mpPoolSet *pool_set, size_t size, size_t *alloc_size)
   //printf("mp_alloc_best_effort(%lu)\n", size);
   if(!pool_set) return NULL;
 
-  ENTER_CRITICAL();
+  LOCK_POOLS(pool_set);
     // Search for non-empty pool with elements >= size
     for(cur = pool_set->pools; cur; cur = mp__next(cur)) {
       if(cur->free_list && !(cur->flags & MP_FLAG_DISABLED)) {
@@ -541,7 +565,7 @@ void *mp_alloc_best_effort(mpPoolSet *pool_set, size_t size, size_t *alloc_size)
     if(alloc_pool)
       alloc = mp__take_pool_element(alloc_pool, alloc_size);
 
-  EXIT_CRITICAL();
+  UNLOCK_POOLS(pool_set);
 
 #ifdef USE_MP_COLLECT_STATS
   if(alloc_pool)
@@ -581,7 +605,7 @@ void *mp_alloc_with_ref(mpPoolSet *pool_set, size_t size, size_t *alloc_size) {
 
   if(!pool_set) return NULL;
 
-  ENTER_CRITICAL();
+  LOCK_POOLS(pool_set);
     // Search for non-empty pool with elements >= size
     for(cur = pool_set->pools; cur; cur = mp__next(cur)) {
       if(cur->free_list && cur->element_size >= size && !(cur->flags & MP_FLAG_DISABLED)) {
@@ -589,7 +613,7 @@ void *mp_alloc_with_ref(mpPoolSet *pool_set, size_t size, size_t *alloc_size) {
         break;
       }
     }
-  EXIT_CRITICAL();
+  UNLOCK_POOLS(pool_set);
 
   if(alloc) {
     if(alloc_size)
@@ -614,12 +638,15 @@ static inline bool mp__is_ref_counted(mpPool *pool, void *element) {
 
 // Find the pool an element belongs to
 static inline mpPool *mp__find_pool(mpPoolSet *pool_set, void *element) {
-  for(mpPool *cur = pool_set->pools; cur; cur = mp__next(cur)) {
-    if(element >= cur->pool_begin && element < cur->pool_end) {
-      return cur;
-    }
+  mpPool *cur;
+
+  LOCK_POOLS(pool_set);
+  for(cur = pool_set->pools; cur; cur = mp__next(cur)) {
+    if(element >= cur->pool_begin && element < cur->pool_end)
+      break;
   }
-  return NULL;
+  UNLOCK_POOLS(pool_set);
+  return cur;
 }
 
 
@@ -739,7 +766,7 @@ bool mp_free(mpPoolSet *pool_set, void *element) {
     // Return element to free list
     mpPoolChunk *chunk = (mpPoolChunk *)element;
 
-    ENTER_CRITICAL();
+    LOCK_POOLS(pool_set);
       chunk->next = pool->free_list;
       pool->free_list = chunk;
 #ifdef USE_MP_COLLECT_STATS
@@ -749,7 +776,7 @@ bool mp_free(mpPoolSet *pool_set, void *element) {
 #ifdef USE_MP_POINTER_CHECK
       chunk->sentinel = SENTINEL_VALUE(chunk);
 #endif
-    EXIT_CRITICAL();
+    UNLOCK_POOLS(pool_set);
 
     return true;
   }
@@ -789,7 +816,7 @@ bool mp_free_secure(mpPoolSet *pool_set, void *element) {
     // Return element to free list
     mpPoolChunk *chunk = (mpPoolChunk *)element;
 
-    ENTER_CRITICAL();
+    LOCK_POOLS(pool_set);
       chunk->next = pool->free_list;
       pool->free_list = chunk;
 #ifdef USE_MP_COLLECT_STATS
@@ -799,7 +826,7 @@ bool mp_free_secure(mpPoolSet *pool_set, void *element) {
 #ifdef USE_MP_POINTER_CHECK
       chunk->sentinel = SENTINEL_VALUE(chunk);
 #endif
-    EXIT_CRITICAL();
+    UNLOCK_POOLS(pool_set);
 
     return true;
   }
@@ -926,7 +953,7 @@ void mp_summary(mpPoolSet *pool_set) {
     // Count elements on free list
     size_t flist_count = 0;
     bool good_free_list = true;
-    ENTER_CRITICAL();
+    LOCK_POOLS(pool_set);
       for(mpPoolChunk *elem = cur->free_list; elem; elem = elem->next) {
         flist_count++;
 #ifdef USE_MP_POINTER_CHECK
@@ -935,7 +962,7 @@ void mp_summary(mpPoolSet *pool_set) {
           good_free_list = false;
 #endif
       }
-    EXIT_CRITICAL();
+    UNLOCK_POOLS(pool_set);
 
     printf("\nPool %d (%" PRIuz " B):", i++, cur->element_size);
     if(!good_free_list)

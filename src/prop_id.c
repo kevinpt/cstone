@@ -7,8 +7,6 @@
 #include "cstone/platform.h"
 #ifdef PLATFORM_HAS_ATOMICS
 #  include <stdatomic.h>
-#else
-#  include "locking.h"
 #endif
 
 #include "util/range_strings.h"
@@ -546,10 +544,9 @@ uint32_t prop_new_global_id(void) {
   uint32_t id = atomic_fetch_add(&next_id, 1);
 
 #else
+#  warning "No atomic semantics on global IDs"
   static volatile uint32_t next_id = 1;
-  ENTER_CRITICAL();
-    uint32_t id = next_id++;
-  EXIT_CRITICAL();
+  uint32_t id = next_id++;
 #endif
 
   return PROP_AUX_24(id);

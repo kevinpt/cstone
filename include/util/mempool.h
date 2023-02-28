@@ -25,13 +25,15 @@ DEALINGS IN THE SOFTWARE.
 #ifndef MEMPOOL_H
 #define MEMPOOL_H
 
+#include "util/locking.h"
+
 // Configration options
 #define USE_MP_COLLECT_STATS
 #define USE_MP_POINTER_CHECK
 
 #ifdef USE_MP_COLLECT_STATS
-#  include "stats.h"
-#  include "histogram.h"
+#  include "util/stats.h"
+#  include "util/histogram.h"
 #endif
 
 
@@ -58,6 +60,12 @@ typedef struct {
   mpPool *pools;
 #ifdef USE_MP_COLLECT_STATS
   Histogram   *hist;
+#endif
+
+#if defined USE_PTHREAD_LOCK
+  pthread_mutex_t lock;
+#elif defined USE_ATOMIC_SPINLOCK
+  atomic_flag lock;
 #endif
 } mpPoolSet;
 

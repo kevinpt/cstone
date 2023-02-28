@@ -6,7 +6,7 @@
 
 
 // Determine target runtime platform to handle inconsistencies between C libraries
-#if defined linux
+#if defined __linux__
 #  define PLATFORM_LINUX 1
 
 #elif defined newlib
@@ -60,7 +60,8 @@
 
 
 
-#if (defined __STDC_VERSION__ && __STDC_VERSION__ >= 201112L && !defined __STDC_NO_ATOMICS__)
+#if (!defined PLATFORM_HAS_ATOMICS && defined __STDC_VERSION__ && __STDC_VERSION__ >= 201112L \
+    && !defined __STDC_NO_ATOMICS__)
 #  define PLATFORM_HAS_ATOMICS
 #endif
 
