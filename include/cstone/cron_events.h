@@ -115,6 +115,12 @@ bool cron_decode_schedule(const char *encoded, CronTimeSpec *spec);
 bool cron_save_to_prop_db(PropDB *db);
 bool cron_load_from_prop_db(PropDB *db);
 
+void cron_describe_month(CronTimeSpec *spec, AppendRange *rng);
+void cron_describe_week_day(CronTimeSpec *spec, AppendRange *rng);
+void cron_describe_month_day(CronTimeSpec *spec, AppendRange *rng);
+void cron_describe_hour(CronTimeSpec *spec, AppendRange *rng);
+void cron_describe_minute(CronTimeSpec *spec, AppendRange *rng);
+
 int32_t cmd_cron(uint8_t argc, char *argv[], void *eval_ctx);
 
 #ifdef __cplusplus
