@@ -25,30 +25,59 @@ DEALINGS IN THE SOFTWARE.
 #ifndef TERM_COLOR_H
 #define TERM_COLOR_H
 
+#ifndef USE_ANSI_COLOR
+#  define USE_ANSI_COLOR    1
+#endif
 
-// ******************** Preconstucted ANSI color macros ********************
-#define A_BLK "\033[0;30m"
-#define A_RED "\033[0;31m"
-#define A_GRN "\033[0;32m"
-#define A_YLW "\033[0;33m"
-#define A_BLU "\033[0;34m"
-#define A_MAG "\033[0;35m"
-#define A_CYN "\033[0;36m"
-#define A_WHT "\033[0;37m"
+// ******************** Preconstructed ANSI color macros ********************
+
+#if USE_ANSI_COLOR
+#  define A_BLK "\033[0;30m"
+#  define A_RED "\033[0;31m"
+#  define A_GRN "\033[0;32m"
+#  define A_YLW "\033[0;33m"
+#  define A_BLU "\033[0;34m"
+#  define A_MAG "\033[0;35m"
+#  define A_CYN "\033[0;36m"
+#  define A_WHT "\033[0;37m"
+
+#  define A_BOLD "\033[1m"
+
+#  define A_BBLK "\033[1;30m"
+#  define A_BRED "\033[1;31m"
+#  define A_BGRN "\033[1;32m"
+#  define A_BYLW "\033[1;33m"
+#  define A_BBLU "\033[1;34m"
+#  define A_BMAG "\033[1;35m"
+#  define A_BCYN "\033[1;36m"
+#  define A_BWHT "\033[1;37m"
+
+#  define A_NONE "\033[0m"
 
 
-#define A_BOLD "\033[1m"
+#else // No ANSI color
+#  define A_BLK ""
+#  define A_RED ""
+#  define A_GRN ""
+#  define A_YLW ""
+#  define A_BLU ""
+#  define A_MAG ""
+#  define A_CYN ""
+#  define A_WHT ""
 
-#define A_BBLK "\033[1;30m"
-#define A_BRED "\033[1;31m"
-#define A_BGRN "\033[1;32m"
-#define A_BYLW "\033[1;33m"
-#define A_BBLU "\033[1;34m"
-#define A_BMAG "\033[1;35m"
-#define A_BCYN "\033[1;36m"
-#define A_BWHT "\033[1;37m"
+#  define A_BOLD ""
 
-#define A_NONE "\033[0m"
+#  define A_BBLK ""
+#  define A_BRED ""
+#  define A_BGRN ""
+#  define A_BYLW ""
+#  define A_BBLU ""
+#  define A_BMAG ""
+#  define A_BCYN ""
+#  define A_BWHT ""
+
+#  define A_NONE ""
+#endif
 
 
 // Color codes. Use these to track the current active color selection.
@@ -64,7 +93,15 @@ enum ANSIColor {
   ANSI_WHT = 37
 };
 
+
+#define BRIGHT(c)  ((c) + 60)
+
+
 #if 0
+static inline void term_color_fg_bg(enum ANSIColor fg, enum ANSIColor bg) {
+  printf("\033[%d;%dm", fg, bg+10);
+}
+
 void term_color(enum ANSIColor c) {
   if(c != ANSI_NONE)
     printf("\033[0;%dm", c);
