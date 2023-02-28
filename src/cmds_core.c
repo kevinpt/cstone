@@ -595,21 +595,24 @@ static int32_t cmd_log(uint8_t argc, char *argv[], void *eval_ctx) {
 
 
 static int32_t cmd_property(uint8_t argc, char *argv[], void *eval_ctx) {
-  GetoptState state = {0};
-  state.report_errors = true;
+  GetoptState state = {.report_errors = true};
 
   int c;
-  bool dump_blob = false;
+  uint32_t prop;
   char *prop_name  = NULL;
+  const char *query_prop = NULL;
   const char *prop_value = NULL;
+  bool dump_blob = false;
   bool list_all = (argc == 1);
 
-  while((c = getopt_r(argv, "dh", &state)) != -1) {
+  while((c = getopt_r(argv, "dq:h", &state)) != -1) {
     switch(c) {
     case 'd': dump_blob = true; break;
+    case 'q': query_prop = state.optarg; break;
     case 'h':
       puts("List all properties:  PROPerty");
-      puts("List named property:  PROPerty [-d] [name]");
+      puts("List named property:  PROPerty [-d] <name>");
+      puts("Query property:       PROPerty -q <name>");
       puts("Set property:         PROPerty <name>=<value>");
       return 0;
       break;
@@ -639,11 +642,23 @@ static int32_t cmd_property(uint8_t argc, char *argv[], void *eval_ctx) {
     return 0;
   }
 
+  if(query_prop) {
+    prop = prop_parse_any(query_prop);
+    if(prop > 0) {
+      char buf[50];
+      printf("  " PROP_ID "  %s\n", prop, prop_get_name(prop, buf, sizeof buf));
+    } else {
+      puts("  Invalid property");
+    }
+    return 0;
+  }
+
+  // Additional arguments; Accept named properties and assignments
 
   if(state.optind < argc) { // Non-option args
     prop_name = argv[state.optind++];
   }
-  printf("optind: %d  argc: %d  prop_name: %p\n", state.optind, argc, prop_name);
+  //printf("optind: %d  argc: %d  prop_name: %p\n", state.optind, argc, prop_name);
 
   if(!prop_name)
     return -1;
@@ -655,14 +670,10 @@ static int32_t cmd_property(uint8_t argc, char *argv[], void *eval_ctx) {
     *eq_pos = '\0';
   }
 
-  // Check if this is an ID string (Pnnnnnnnn)
-  uint32_t prop = prop_parse_id(prop_name);
+  // Check if this is an ID string (Pnnnnnnnn) or full name
+  prop = prop_parse_any(prop_name);
 
-  // Otherwise, check if it's a full name
-  if(prop == 0)
-    prop = prop_parse_name(prop_name);
-
-  if(prop_value) {  // Assign new value to property
+  if(prop && prop_value) {  // Assign new value to property
     // Confirm we can write this prop
     uint8_t attrs;
     prop_get_attributes(&g_prop_db, prop, &attrs);
@@ -709,7 +720,6 @@ static int32_t cmd_property(uint8_t argc, char *argv[], void *eval_ctx) {
 
   if(prop == 0 || !prop_print(&g_prop_db, prop, dump_blob))
     puts("Invalid property");
-
 
   return 0;
 }
