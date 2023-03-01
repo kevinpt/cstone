@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "FreeRTOS.h"
 #include "semphr.h"
@@ -8,17 +9,16 @@
 #include "cstone/console_history.h"
 #include "cstone/console.h"
 
-
-#include "cstone/BipBuf.hpp"
-typedef BipFifo<char, CONSOLE_HISTORY_BUF_LEN_MAX> HistFifo;
+#include "cstone/bipbuf_char.h"
+typedef BipFifo_char HistFifo;
 
 
 void history_init(ConsoleHistory *hist, char *buf, size_t buf_len) {
   memset(hist, 0, sizeof *hist);
 
-  HistFifo *hf = new HistFifo;
+  HistFifo *hf = (HistFifo *)malloc(sizeof *hf); // FIXME: Convert to C
   if(hf) {
-    hf->init(buf, buf_len);
+    bipfifo_init__char(hf, buf, buf_len);
     hist->fifo = hf;
   }
 };
@@ -31,10 +31,10 @@ void history_reset_iter(ConsoleHistory *hist) {
 void history_pop_command(ConsoleHistory *hist) {
     char *head_chunk = NULL;
     HistFifo *hf = (HistFifo *)hist->fifo;
-    size_t chunk_len = hf->next_chunk(&head_chunk);
+    size_t chunk_len =  bipfifo_next_chunk__char(hf, &head_chunk);
     if(chunk_len > 0) {
       size_t cmd_len = strlen(head_chunk)+1;
-      hf->pop(&head_chunk, cmd_len);
+      bipfifo_pop__char(hf, &head_chunk, cmd_len);
     }
 }
 
@@ -53,15 +53,15 @@ void history_push_command(ConsoleHistory *hist, char *cmd) {
 
   // Create space by popping oldest entries if too full
   HistFifo *hf = (HistFifo *)hist->fifo;
-  size_t free_elems = hf->free_elems();
-  while(free_elems < cmd_len && !hf->is_empty()) {
+  size_t free_elems = bipfifo_pushable_elems__char(hf);
+  while(free_elems < cmd_len && !bipfifo_is_empty__char(hf)) {
     //printf("## FULL  %d < %d\n", free_elems, cmd_len);
     history_pop_command(hist);
-    free_elems = hf->free_elems();
+    free_elems = bipfifo_pushable_elems__char(hf);
   }
 
   // Add new command
-  hf->push(cmd, cmd_len);
+  bipfifo_push__char(hf, cmd, cmd_len);
   history_reset_iter(hist);
 
   //printf("## HIST PUSH '%s'\n", cmd);
@@ -80,7 +80,7 @@ char *history_next_command(ConsoleHistory *hist) {
 
   if(!hist->cur_chunk || hist->chunk_pos >= hist->chunk_len) {  // Get new chunk
     HistFifo *hf = (HistFifo *)hist->fifo;
-    hist->chunk_len = hf->next_chunk(&hist->cur_chunk);
+    hist->chunk_len = bipfifo_next_chunk__char(hf, &hist->cur_chunk);
     hist->chunk_pos = 0;
   }
 
@@ -106,7 +106,7 @@ char *history_prev_command(ConsoleHistory *hist) {
 
   if(!hist->cur_chunk || hist->chunk_pos == 0) {  // Get new chunk
     HistFifo *hf = (HistFifo *)hist->fifo;
-    hist->chunk_len = hf->prev_chunk(&hist->cur_chunk);
+    hist->chunk_len = bipfifo_prev_chunk__char(hf, &hist->cur_chunk);
     hist->chunk_pos = hist->chunk_len;
   }
 
