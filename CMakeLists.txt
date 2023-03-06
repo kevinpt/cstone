@@ -48,6 +48,7 @@ set(CSTONE_SOURCE_COMMON
     src/tasks_core.c
     src/debug.c
     src/led_blink.c
+    src/sequence_events.c
     src/isr_queue.c
     src/dual_stream.c
     src/console.c

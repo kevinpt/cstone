@@ -428,6 +428,7 @@ M(P3, LIMIT,    7) \
 M(P3, BUILD,    8) \
 M(P3, CRON,     9) \
 M(P3, MEM,      10) \
+M(P3, SEQUENCER, 11) \
 M(P3, R127,     127) \
 \
 M(P4, VALUE,    1) \

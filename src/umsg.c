@@ -173,6 +173,8 @@ Returns:
   true on success
 */
 bool umsg_tgt_send(UMsgTarget *tgt, UMsg *msg, uint32_t timeout) {
+  if(!tgt) return false;
+
   TickType_t timeout_ticks;
 
   timeout_ticks = (timeout == INFINITE_TIMEOUT) ? portMAX_DELAY : pdMS_TO_TICKS(timeout);

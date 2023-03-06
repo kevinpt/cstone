@@ -25,6 +25,8 @@
 #include "cstone/error_log.h"
 #include "cstone/console.h"
 #include "cstone/led_blink.h"
+#include "cstone/sequence_events.h"
+#include "cstone/timing.h"
 
 #include "cstone/tasks_core.h"
 #include "util/histogram.h"
@@ -52,6 +54,7 @@ static UMsgTarget s_tgt_prop_update;
 static TaskHandle_t s_log_db_task;
 #endif
 
+static TaskHandle_t s_event_seq_task;
 
 
 // TASK: Umsg hub
@@ -189,6 +192,33 @@ static void blink_task_cb(TimerHandle_t timer) {
   blinkers_update_all();
   s_blink_timestamp += BLINK_TASK_MS;
 }
+
+
+
+// Callback for event sequencer
+SequenceTime sequence_timestamp(void) {
+  return millis();
+}
+
+
+static void event_sequencer_task_cb(void *ctx) {
+  // FIXME: Suspend task if no active sequences
+  static SequenceTime prev_nd = 0;
+  SequenceTime next_delay = sequence_update_all();
+
+  if(next_delay == 0) {
+    //DPRINT("Suspend");
+    //vTaskSuspend(s_event_seq_task);
+    periodic_task_set_period(s_event_seq_task, 1000);
+
+  } else if(next_delay != prev_nd) {
+    next_delay = next_delay > 3000 ? 3000 : next_delay < 50 ? 50 : next_delay;
+    periodic_task_set_period(s_event_seq_task, next_delay);
+  }
+
+  prev_nd = next_delay;
+}
+
 
 #ifdef USE_CONSOLE_TASK
 // TASK: Console
@@ -330,6 +360,18 @@ void core_tasks_init(void) {
 
   xTimerStart(led_timer, 0);
 #endif
+
+  // Run event sequencer as an independent task
+  static PeriodicTaskCfg seq_task_cfg = {  // Event sequencer handler
+    .task = event_sequencer_task_cb,
+    .ctx = NULL,
+    .period = EVENT_SEQUENCER_TASK_MS,
+    .repeat = REPEAT_FOREVER
+  };
+
+  s_event_seq_task = create_periodic_task("EvtSeq", STACK_BYTES(1024), TASK_PRIO_LOW, &seq_task_cfg);
+
+
 
 #ifdef USE_CONSOLE_TASK
   static PeriodicTaskCfg console_task_cfg = { // Console command proc

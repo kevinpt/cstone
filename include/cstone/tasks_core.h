@@ -5,7 +5,7 @@
 #define USE_LOAD_MONITOR
 #define USE_CONSOLE_TASK
 
-#ifndef USE_MINIMAL_TASKS
+#if !defined USE_MINIMAL_TASKS || !USE_MINIMAL_TASKS
 #  define USE_ERROR_MONITOR
 #  define USE_EVENT_MONITOR
 #  define USE_LOG_DB
@@ -18,10 +18,11 @@
 extern UMsgHub g_msg_hub;
 
 
-#define LOAD_MONITOR_TASK_MS  1000
-#define BLINK_TASK_MS         40    // Update LEDs
-#define CONSOLE_TASK_MS       17    // Process RX data
-#define LOG_DB_TASK_MS        50
+#define LOAD_MONITOR_TASK_MS    1000
+#define BLINK_TASK_MS           40    // Update LEDs
+#define EVENT_SEQUENCER_TASK_MS 50
+#define CONSOLE_TASK_MS         17    // Process RX data
+#define LOG_DB_TASK_MS          50
 
 #define LOG_DB_TASK_DELAY_MS  1000
 
