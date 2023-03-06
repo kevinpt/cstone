@@ -181,6 +181,13 @@ static void periodic_task_wrapper(void *param) {
     if(cfg->repeat == 0)  // Terminate
       break;
 
+
+    // Check for notification
+    if(ulTaskNotifyTake(/*xClearCountOnExit*/ pdTRUE, 0) > 0) { // Update to period
+      printf("Periodic task notified %ld\n", cfg->period);
+      period_ticks = pdMS_TO_TICKS(cfg->period);
+    }
+
     vTaskDelayUntil(&prev_wake, period_ticks);
   }
 
@@ -194,6 +201,7 @@ static void periodic_task_wrapper(void *param) {
 }
 
 
+// FIXME: Rename to periodic_task_create()
 TaskHandle_t create_periodic_task(const char *name, configSTACK_DEPTH_TYPE stack,
                                   UBaseType_t priority, PeriodicTaskCfg *cfg) {
 
@@ -217,8 +225,21 @@ TaskHandle_t create_periodic_task(const char *name, configSTACK_DEPTH_TYPE stack
     return NULL;
   }
 
+  // Save cfg object as tag so we can retrieve it later
+  vTaskSetApplicationTaskTag(handle, (void *)own_cfg);
+
   return handle;
 }
+
+
+void periodic_task_set_period(TaskHandle_t task, uint32_t period) {
+  PeriodicTaskCfg *cfg = (PeriodicTaskCfg *)xTaskGetApplicationTaskTag(task);
+  if(cfg && cfg->period != period) {
+    cfg->period = period;
+    xTaskNotifyGive(task);
+  }
+}
+
 
 
 // Retrieve heap stats

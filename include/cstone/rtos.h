@@ -40,6 +40,8 @@ typedef struct {
 TaskHandle_t create_periodic_task(const char *name, configSTACK_DEPTH_TYPE stack,
                                   UBaseType_t priority, PeriodicTaskCfg *cfg);
 
+void periodic_task_set_period(TaskHandle_t task, uint32_t period);
+
 static inline TaskHandle_t create_delayed_task(PeriodicTask task, void *ctx, configSTACK_DEPTH_TYPE stack,
                                   uint32_t start_delay) {
   PeriodicTaskCfg cfg = {
