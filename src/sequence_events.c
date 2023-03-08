@@ -11,8 +11,7 @@
 #include "cstone/sequence_events.h"
 
 
-// List of active sequences
-static Sequence *s_SequenceList = NULL;
+static SequenceState s_SequenceState = {0};
 
 // Protect linked list access
 #define LOCK()    LOCK_TAKE(0)
@@ -21,15 +20,16 @@ static Sequence *s_SequenceList = NULL;
 
 
 void sequence_init(Sequence *seq, SequenceEvent *events, uint16_t event_count, uint8_t repeats,
-                    SequenceCompletion complete) {
+                    SequenceCompletion complete, uint32_t id) {
 
   sequence_configure(seq, events, event_count, repeats, complete);
+  seq->id = id != 0 ? id : prop_new_global_id();
   seq->next = NULL;
 }
 
 
 bool sequence_init_pairs(Sequence *seq, SequenceEventPair *event_pairs, uint16_t pair_count, uint8_t repeats,
-                    SequenceCompletion complete) {
+                    SequenceCompletion complete, uint32_t id) {
 
   uint16_t event_count;
   SequenceEvent *events = sequence_compile(event_pairs, pair_count, &event_count);
@@ -37,6 +37,7 @@ bool sequence_init_pairs(Sequence *seq, SequenceEventPair *event_pairs, uint16_t
     return false;
 
   sequence_configure(seq, events, event_count, repeats, complete);
+  seq->id = id != 0 ? id : prop_new_global_id();
   seq->next = NULL;
   
   return true;
@@ -56,35 +57,61 @@ void sequence_configure(Sequence *seq, SequenceEvent *events, uint16_t event_cou
 }
 
 
-void sequence_start(Sequence *seq, uint8_t repeats) {
-  seq->timestamp = sequence_timestamp();
+static Sequence *sequence__find(Sequence *seq_list, uint32_t id) {
+  Sequence *cur = NULL;
+LOCK();
+  for(cur = seq_list; cur; cur = cur->next) {
+    if(cur->id == id)
+      break;
+  }
+UNLOCK();
+  return cur;
 }
 
+bool sequence_is_active(uint32_t id) { return sequence__find(s_SequenceState.active_list, id) != NULL; }
 
-void sequence_restart(Sequence *seq, uint8_t repeats) {
-  seq->timestamp = sequence_timestamp();
-  seq->repeats   = repeats ? repeats + 1 : repeats;
-  seq->cur_event = 0;
-}
-
-
-bool sequence_is_active(Sequence *seq) { return seq->repeats != 1; }
 
 
 void sequence_add(Sequence *seq) {
 LOCK();
   if(seq && seq->next == NULL)
-    ll_slist_push(&s_SequenceList, seq);
+    ll_slist_push(&s_SequenceState.idle_list, seq);
 UNLOCK();
 }
 
 
-void sequence_remove(Sequence *seq) {
+bool sequence_start(uint32_t id, uint8_t repeats) {
+  Sequence *seq = sequence__find(s_SequenceState.idle_list, id);
+  if(!seq)  return false;
+
+  seq->timestamp = sequence_timestamp();
+  seq->repeats = repeats ? repeats + 1 : repeats;
+
 LOCK();
-  if(seq)
-    ll_slist_remove(&s_SequenceList, seq);
+  ll_slist_remove(&s_SequenceState.idle_list, seq);
+  ll_slist_push(&s_SequenceState.active_list, seq);
+UNLOCK();
+  return true;
+}
+
+
+static inline void sequence__disable(Sequence *seq) {
+LOCK();
+  ll_slist_remove(&s_SequenceState.active_list, seq);
+  ll_slist_push(&s_SequenceState.idle_list, seq);
 UNLOCK();
 }
+
+
+bool sequence_stop(uint32_t id) {
+  Sequence *seq = sequence__find(s_SequenceState.active_list, id);
+  if(!seq)  return false;
+
+  sequence__disable(seq);
+  return true;
+}
+
+
 
 
 static SequenceTime sequence_update(Sequence *seq, SequenceTime now) {
@@ -138,7 +165,7 @@ SequenceTime sequence_update_all(void) {
   Sequence *seq;
   
 LOCK();
-  seq = s_SequenceList;
+  seq = s_SequenceState.active_list;
 UNLOCK();
 
   while(seq) {
@@ -151,7 +178,7 @@ LOCK();
 UNLOCK();
 
     if(next_seq_delay == 0) {
-      sequence_remove(seq);
+      sequence__disable(seq);
     } else {
       if(next_seq_delay < next_delay)
         next_delay = next_seq_delay;
@@ -217,11 +244,12 @@ SequenceEvent *sequence_compile(SequenceEventPair *pair_seq, uint16_t pair_count
 }
 
 
-void sequence_dump(SequenceEvent *seq, uint16_t event_count) {
+void sequence_dump(Sequence *seq) {
   char buf[40];
-  for(uint16_t i = 0; i < event_count; i++) {
-    printf("%4d ms  " PROP_ID "  %s\n", seq[i].delay_ms, seq[i].event,
-            prop_get_name(seq[i].event, buf, sizeof buf));
+  printf("Sequence " PROP_ID ":\n", seq->id);
+  for(uint16_t i = 0; i < seq->event_count; i++) {
+    printf("  %4d ms  " PROP_ID "  %s\n", seq->events[i].delay_ms, seq->events[i].event,
+            prop_get_name(seq->events[i].event, buf, sizeof buf));
   }
 }
 

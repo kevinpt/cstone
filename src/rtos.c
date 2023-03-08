@@ -167,6 +167,7 @@ static void periodic_task_wrapper(void *param) {
 
   while(1) {  // Run task continuously
     TickType_t now = xTaskGetTickCount();
+    //printf("## periodic task %p  %lu\n", cfg, period_ticks);
 
     // Correct wake time if we've been suspended for more than the task period
     if((now - prev_wake) >= period_ticks)
@@ -184,7 +185,7 @@ static void periodic_task_wrapper(void *param) {
 
     // Check for notification
     if(ulTaskNotifyTake(/*xClearCountOnExit*/ pdTRUE, 0) > 0) { // Update to period
-      printf("Periodic task notified %ld\n", cfg->period);
+      //printf("Periodic task notified %" PRIu32 "\n", cfg->period);
       period_ticks = pdMS_TO_TICKS(cfg->period);
     }
 
