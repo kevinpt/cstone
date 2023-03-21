@@ -26,6 +26,11 @@ bool str_ends_with(const char *str, const char *suffix);
 int str_split(char *str, const char *delims, char *fields[], int fields_max);
 
 int str_to_fixed(const char *str, unsigned fp_scale, char **endptr);
+
+const char *str_ltrim(const char *str);
+unsigned str_break(const char *str, unsigned columns, bool space_only);
+void str_print_wrapped(const char *str, unsigned columns, unsigned indent, bool space_only);
+
 #ifdef __cplusplus
 }
 #endif

@@ -67,6 +67,7 @@ colon in the optstring:
 #include <ctype.h>
 
 #include "util/range_strings.h"
+#include "util/string_ops.h"
 #include "util/getopt_r.h"
 #include "util/term_color.h"
 
@@ -358,27 +359,26 @@ static const struct option *find_long_option(char short_opt, const struct option
 static void print_help_detail(const OptionHelp *help, unsigned opt_len, unsigned max_prefix,
                               unsigned  max_columns, bool long_opt) {
   int prefix_len = opt_len;
-  bool break_line = max_prefix + strlen(help->help) > max_columns; // Check if it fits
+  unsigned help_len = strlen(help->help);
+  unsigned next_break = str_break(help->help, max_columns-max_prefix, /*space_only*/ true);
 
 #define LINE_BREAK_INDENT   16
 
   if(help->arg_name) {
     prefix_len += strlen(help->arg_name) + 1;
 
-    if(!break_line) {
-      printf("%c%s%*s  %s", long_opt ? '=':' ', help->arg_name, max_prefix-prefix_len, "", help->help);
-    } else {  // Break help text to new line
-      printf("%c%s\n", long_opt ? '=':' ', help->arg_name);
-      printf("%*s%s", LINE_BREAK_INDENT, "", help->help);
-    }
+    printf("%c%s%*s  %.*s\n", long_opt ? '=':' ', help->arg_name, max_prefix-prefix_len, "",
+      next_break, help->help);
 
   } else {  // No argument string
-    if(!break_line) {
-      printf("%*s  %s", max_prefix-prefix_len, "", help->help);
-    } else {  // Break help text to new line
-      printf("\n%*s%s", LINE_BREAK_INDENT, "", help->help);
-    }
+    printf("%*s  %.*s\n", max_prefix-prefix_len, "", next_break, help->help);
   }
+
+  if(next_break < help_len) { // Break help text to new line
+    const char *remaining_help = &help->help[next_break];
+    str_print_wrapped(remaining_help, max_columns, LINE_BREAK_INDENT, /*space_only*/ true);
+  }
+
 }
 
 
@@ -552,10 +552,10 @@ void print_command_usage(const char *app_name, const char *optstring, const stru
         print_help_detail(help, opt_len, max_prefix, max_columns, /*long_opt*/true);
       } else {  // No help. Show if arg is present
         if(long_options[lo].has_arg != no_argument)
-          printf("=<%s>", long_options[lo].has_arg == required_argument ? "required" : "optional");
+          printf("=<%s>\n", long_options[lo].has_arg == required_argument ? "required" : "optional");
+        else
+          puts("");
       }
-
-      puts("");
     }
   }
 
@@ -573,24 +573,23 @@ void print_command_usage(const char *app_name, const char *optstring, const stru
       print_help_detail(help, opt_len, max_prefix, max_columns, /*long_opt*/false);
     } else {
       if(optstring[i+1] == ':')
-        printf(" <%s>", (optstring[i+2]== ':') ? "optional" : "required");
+        printf(" <%s>\n", (optstring[i+2]== ':') ? "optional" : "required");
+      else
+        puts("");
     }
-    puts("");
   }
 
   // Print detailed positional args
   if(positional_args) {
-    int i = 0;
-    while(positional_args[i][0] != '\0') {
+    for(int i = 0; positional_args[i][0] != '\0'; i++) {
       printf("  %s", positional_args[i]);
       int opt_len = 2 + strlen(positional_args[i]);
 
       const OptionHelp *help = find_help(positional_args[i], opt_help);
       if(help)
         print_help_detail(help, opt_len, max_prefix, max_columns, /*long_opt*/false);
-
-      puts("");
-      i++;
+      else
+        puts("");
     }
   }
 }

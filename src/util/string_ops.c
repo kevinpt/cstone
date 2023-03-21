@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <ctype.h>
 #include <string.h>
 #include <limits.h>
@@ -292,5 +293,80 @@ int str_to_fixed(const char *str, unsigned fp_scale, char **endptr) {
   if(neg) int_val = -int_val;
 
   return int_val;
+}
+
+
+/*
+Trim left whitespace from a string
+
+This does not modify the string.
+
+Args:
+  str: String to trim
+
+Returns:
+  New start position of the string
+*/
+const char *str_ltrim(const char *str) {
+  const char *pos = str;
+  while(*pos != '\0') {
+    if(!isspace(*pos)) break;
+    pos++;
+  }
+
+  return pos;
+}
+
+
+/*
+Find next break point in a string
+
+The string will be broken on whitespace or WS+punctuation wherever possible.
+
+Args:
+  str:        String to break
+  columns:    Maximum length of the broken string
+  space_only: When true, only breaks on whitespace; otherwise all punctuation as well
+
+Returns:
+  Length of the string up to next break point
+*/
+unsigned str_break(const char *str, unsigned columns, bool space_only) {
+  int last_break = -1;
+  unsigned i;
+
+  for(i = 0; i <= columns && str[i] != '\0'; i++) {
+    if(isspace(str[i]) || (!space_only && ispunct(str[i])))
+      last_break = i;
+  }
+
+  return (str[i] == '\0') ? i : (last_break >= 0) ? last_break : columns;
+}
+
+
+/*
+Print a string with line wrap and indentation
+
+Args:
+  str:        String to print with wrapping
+  columns:    Maximum total columns to print within
+  indent:     Number of spaces to indent
+  space_only: When true, only breaks on whitespace; otherwise all punctuation as well
+*/
+void str_print_wrapped(const char *str, unsigned columns, unsigned indent, bool space_only) {
+  const char *pos = str;
+
+  if(columns == 0 || indent >= columns) // No space left to print anything
+    return;
+
+  while(*pos != '\0') {
+    // Skip leading whitespace
+    pos = str_ltrim(pos);
+
+    unsigned line_len = str_break(pos, columns - indent, space_only);
+
+    printf("%*s%.*s\n", indent, "", line_len, pos);
+    pos += line_len;
+  }
 }
 
