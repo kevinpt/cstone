@@ -12,10 +12,12 @@ extern "C" {
 // On POSIX port, IDLE task will never run if other tasks have higher priority
 // That prevents cleanup of OS resources
 #  define TASK_PRIO_LOW   (tskIDLE_PRIORITY + 0)
+#  define TASK_PRIO_MED   (tskIDLE_PRIORITY + 0)
 #  define TASK_PRIO_HIGH  (tskIDLE_PRIORITY + 0)
 
 #else // PLATFORM_EMBEDDED
 #  define TASK_PRIO_LOW   (tskIDLE_PRIORITY + 1)
+#  define TASK_PRIO_MED   (tskIDLE_PRIORITY + 2)
 #  define TASK_PRIO_HIGH  (tskIDLE_PRIORITY + 4)
 #endif
 
