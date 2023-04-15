@@ -340,7 +340,7 @@ unsigned str_break(const char *str, unsigned columns, bool space_only) {
       last_break = i;
   }
 
-  return (str[i] == '\0') ? i : (last_break >= 0) ? last_break : columns;
+  return (str[i] == '\0') ? i : (last_break >= 0) ? (unsigned)last_break : columns;
 }
 
 
