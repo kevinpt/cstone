@@ -41,8 +41,9 @@ typedef struct {
 extern "C" {
 #endif
 
-// You must provide implementation of this function
+// You must provide implementation of these functions:
 SequenceTime sequence_timestamp(void);
+void sequence_resume(void);
 
 
 void sequence_init(Sequence *seq, SequenceEvent *events, uint16_t event_count, uint8_t repeats,

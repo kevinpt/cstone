@@ -91,6 +91,9 @@ LOCK();
   ll_slist_remove(&s_SequenceState.idle_list, seq);
   ll_slist_push(&s_SequenceState.active_list, seq);
 UNLOCK();
+
+  sequence_resume(); // Implementation defined wakeup of sequencer task
+
   return true;
 }
 
@@ -110,8 +113,6 @@ bool sequence_stop(uint32_t id) {
   sequence__disable(seq);
   return true;
 }
-
-
 
 
 static SequenceTime sequence_update(Sequence *seq, SequenceTime now) {

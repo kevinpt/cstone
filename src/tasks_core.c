@@ -201,20 +201,37 @@ SequenceTime sequence_timestamp(void) {
 }
 
 
+void sequence_resume(void) {
+  if(eTaskGetState(s_event_seq_task) == eSuspended) {
+    DPRINT("Resume");
+    vTaskResume(s_event_seq_task);
+
+  } else { // Task must be blocked in a delay that is now invalid
+    xTaskAbortDelay(s_event_seq_task); // Force new delay computation
+    vTaskResume(s_event_seq_task); // Handle possible race condition after eTaskGetState()
+  }
+}
+
+
 static void event_sequencer_task_cb(void *ctx) {
-  // FIXME: Suspend task if no active sequences
   static SequenceTime prev_nd = 0;
   SequenceTime next_delay = sequence_update_all();
 
-  if(next_delay == 0) {
-    //DPRINT("Suspend");
-    //vTaskSuspend(s_event_seq_task);
-    periodic_task_set_period(s_event_seq_task, 1000);
+  if(next_delay == 0) { // No active tasks
+    DPRINT("Suspend");
+    vTaskSuspend(s_event_seq_task);
+    // Resume from here with new sequence(s)
+    next_delay = sequence_update_all();
+  }
 
-  } else if(next_delay != prev_nd) {
-    next_delay = next_delay > 3000 ? 3000 : next_delay < 50 ? 50 : next_delay;
+  if(next_delay != prev_nd) { // Change task period
+#define SEQ_MAX_T   3000
+#define SEQ_MIN_T   10
+    //next_delay = next_delay > SEQ_MAX_T ? SEQ_MAX_T : next_delay < SEQ_MIN_T ? SEQ_MIN_T : next_delay;
+    next_delay = next_delay < SEQ_MIN_T ? SEQ_MIN_T : next_delay;
     periodic_task_set_period(s_event_seq_task, next_delay);
   }
+//  printf("nd: %u\n", next_delay);
 
   prev_nd = next_delay;
 }
@@ -369,7 +386,7 @@ void core_tasks_init(void) {
     .repeat = REPEAT_FOREVER
   };
 
-  s_event_seq_task = create_periodic_task("EvtSeq", STACK_BYTES(1024), TASK_PRIO_LOW, &seq_task_cfg);
+  s_event_seq_task = create_periodic_task("EvtSeq", STACK_BYTES(1024), TASK_PRIO_MED, &seq_task_cfg);
 
 
 
