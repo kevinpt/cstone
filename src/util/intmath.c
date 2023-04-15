@@ -103,12 +103,11 @@ int32_t log2_fixed(uint32_t n, unsigned fp_exp) {
   };
 
 
-  // n = 2^l2_int * (1 + l2_frac)
-  int zeros = clz(n);
-  int32_t l2_int = -zeros;
+  // n = 2^(-l2_int) * (1 + l2_frac)
+  int32_t l2_int = clz(n);
 
   // Extract fraction scaled by 2^32 so it is left justified
-  uint32_t frac = n << (zeros + 1);
+  uint32_t frac = n << (l2_int + 1);
   int ix = frac >> ((8*sizeof frac) - LOG2_TABLE_BITS); // Index into table with upper bits of fraction
   int32_t l2_frac = log2_table[ix];
 
@@ -121,7 +120,7 @@ int32_t log2_fixed(uint32_t n, unsigned fp_exp) {
   l2_frac = (((l2_frac_b - l2_frac) * ix_frac) >> LOG2_FP_EXP) + l2_frac;
 
   // Merge integer and fraction
-  l2_int = (l2_int << LOG2_FP_EXP) + l2_frac;
+  l2_int = -(l2_int << LOG2_FP_EXP) + l2_frac;
 
   // Adjust for exponent on input n
   // Internally n is treated as if it is always in Q0.31 format.
@@ -526,7 +525,7 @@ Point16 interpolate_points(Point16 p0, Point16 p1, uint16_t t) {
 Evaluate a quadratic polynomial
 
 Fixed-point values for for coefficients represent the interval [-1,1).
-The interpolant is a value int he interval [0,1).
+The interpolant is a value in the interval [0,1).
 
 Args:
   a:  t^2 coefficient
@@ -540,9 +539,12 @@ Returns:
 int16_t quadratic_eval(int16_t a, int16_t b, int16_t c, uint16_t t) {
   int32_t q;
 
+  // q = (a - 2b + c)*t^2 + 2(b-a)*t + a
+
   q = (int32_t)a - 2*(int32_t)b + (int32_t)c;
   q = (((q * (int32_t)t) >> 16) * (int32_t)t) >> 16;
-  q += (2*(int32_t)(b - a) * (int32_t)t) >> 16;
+  // 2(b-a)*t --> (fixed-point correction) 2(b-a)*t / 2^16 --> (b-a)*t / 2^15
+  q += (((int32_t)b - (int32_t)a) * (int32_t)t) >> 15;
   q += a;
 
   return (int16_t)q;
@@ -601,6 +603,7 @@ Args:
 Returns:
   Positive root of the equation
 */
+__attribute__((no_sanitize_undefined))
 uint16_t quadratic_solve(int32_t a, int32_t b, int32_t c, int16_t x) {
 /*  Find positive root (t) for a given value of x
   det = sqrt(b^2 - 4ac)
@@ -625,6 +628,8 @@ uint16_t quadratic_solve(int32_t a, int32_t b, int32_t c, int16_t x) {
   // Root is (det-b)/2a
   // We're converting from signed Q1.15 to unsigned Q0.16 format for the result so the
   // fixed-point adjustment has an extra 2x scaling (/2a --> /a).
+
+  // NOTE: This can trigger a runtime error for negative left shift when ubsan is enabled.
   int32_t root = ((det - b) << 15) / a;
   return root < 0 ? 0 : root > UINT16_MAX ? UINT16_MAX : (uint16_t)root;
 }
