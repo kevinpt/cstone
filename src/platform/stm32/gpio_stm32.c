@@ -184,6 +184,14 @@ static void stm32__configure_port(GPIO_TypeDef *port_addr, GPIOPortData pin_bit,
 }
 
 
+void gpio_config(uint8_t port, uint8_t pin, unsigned short mode) {
+  GPIO_TypeDef *port_addr = stm32__get_port_addr(port);
+  GPIOPortData pin_bit = stm32__pin_encode(pin);
+  gpio_enable_port(port);
+  stm32__configure_port(port_addr, pin_bit, mode);
+}
+
+
 void gpio_init(GPIOPin *gpio, uint8_t port, uint8_t pin, unsigned short mode) {
   gpio->port  = port;
   gpio->pin   = pin;

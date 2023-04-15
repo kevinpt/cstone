@@ -75,6 +75,7 @@ extern "C" {
 
 void gpio_sys_init(void);
 void gpio_enable_port(uint8_t port);
+void gpio_config(uint8_t port, uint8_t pin, unsigned short mode);
 
 void gpio_init(GPIOPin *gpio, uint8_t port, uint8_t pin, unsigned short mode);
 bool gpio_value(GPIOPin *gpio);
