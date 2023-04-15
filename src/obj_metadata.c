@@ -43,7 +43,7 @@ static uint32_t crc32_update_hw(const uint8_t *data, size_t data_len) {
 static bool firmware_crc(const ObjMemRegion *regions, uint32_t *crc) {
   *crc = 0;
 
-  uint32_t elf_crc;
+  uint32_t elf_crc = 0;
 
 #if 0
   elf_crc = crc32_init();
