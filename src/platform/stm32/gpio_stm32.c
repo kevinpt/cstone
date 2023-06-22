@@ -204,24 +204,36 @@ void gpio_init(GPIOPin *gpio, uint8_t port, uint8_t pin, unsigned short mode) {
 }
 
 bool gpio_value(GPIOPin *gpio) {
+  if(!gpio || gpio->mode == GPIO_PIN_NO_INIT)
+    return false;
+
   GPIO_TypeDef *port_addr = stm32__get_port_addr(gpio->port);
   GPIOPortData pin_bit = stm32__pin_encode(gpio->pin);
   return LL_GPIO_IsInputPinSet(port_addr, pin_bit);
 }
 
 void gpio_set_high(GPIOPin *gpio) {
+  if(!gpio || gpio->mode == GPIO_PIN_NO_INIT)
+    return;
+
   GPIO_TypeDef *port_addr = stm32__get_port_addr(gpio->port);
   GPIOPortData pin_bit = stm32__pin_encode(gpio->pin);
   LL_GPIO_SetOutputPin(port_addr, pin_bit);
 }
 
 void gpio_set_low(GPIOPin *gpio) {
+  if(!gpio || gpio->mode == GPIO_PIN_NO_INIT)
+    return;
+
   GPIO_TypeDef *port_addr = stm32__get_port_addr(gpio->port);
   GPIOPortData pin_bit = stm32__pin_encode(gpio->pin);
   LL_GPIO_ResetOutputPin(port_addr, pin_bit);
 }
 
 void gpio_set(GPIOPin *gpio, bool new_value) {
+  if(!gpio || gpio->mode == GPIO_PIN_NO_INIT)
+    return;
+
   GPIO_TypeDef *port_addr = stm32__get_port_addr(gpio->port);
   GPIOPortData pin_bit = stm32__pin_encode(gpio->pin);
   if(new_value)
@@ -231,12 +243,18 @@ void gpio_set(GPIOPin *gpio, bool new_value) {
 }
 
 void gpio_toggle(GPIOPin *gpio) {
+  if(!gpio || gpio->mode == GPIO_PIN_NO_INIT)
+    return;
+
   GPIO_TypeDef *port_addr = stm32__get_port_addr(gpio->port);
   GPIOPortData pin_bit = stm32__pin_encode(gpio->pin);
   LL_GPIO_TogglePin(port_addr, pin_bit);
 }
 
 void gpio_highz_on(GPIOPin *gpio) {
+  if(!gpio || gpio->mode == GPIO_PIN_NO_INIT)
+    return;
+
   GPIO_TypeDef *port_addr = stm32__get_port_addr(gpio->port);
   GPIOPortData pin_bit = stm32__pin_encode(gpio->pin);
 
@@ -251,6 +269,9 @@ void gpio_highz_on(GPIOPin *gpio) {
 }
 
 void gpio_highz_off(GPIOPin *gpio, bool new_value) {
+  if(!gpio || gpio->mode == GPIO_PIN_NO_INIT)
+    return;
+
   GPIO_TypeDef *port_addr = stm32__get_port_addr(gpio->port);
   GPIOPortData pin_bit = stm32__pin_encode(gpio->pin);
 

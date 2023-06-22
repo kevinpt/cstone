@@ -30,8 +30,7 @@ typedef struct {
 
 
 typedef struct {
-  uint16_t kind;
-  uint16_t reserved;
+  uint32_t id;
   uint32_t value;
 } TraitDescriptor;
 
@@ -73,6 +72,7 @@ extern "C" {
 #endif
 
 void validate_metadata(void);
+bool metadata_find_trait(uint32_t id, uint32_t *value);
 
 #ifdef __cplusplus
 }

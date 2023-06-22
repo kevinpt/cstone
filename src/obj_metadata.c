@@ -108,3 +108,17 @@ void validate_metadata(void) {
         meta_crc == g_metadata.meta_crc ? CHAR_PASS : CHAR_FAIL);
 }
 
+
+bool metadata_find_trait(uint32_t id, uint32_t *value) {
+  if(!g_metadata.traits)
+    return false;
+
+  for(int i = 0; i < g_metadata.trait_count; i++) {
+    if(g_metadata.traits[i].id == id) {
+      *value = g_metadata.traits[i].value;
+      return true;
+    }
+  }
+  return false;
+}
+

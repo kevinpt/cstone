@@ -416,6 +416,8 @@ M(P2, I2C,      8) \
 M(P2, CRON,     9) \
 M(P2, PRNG,     10) \
 M(P2, BUTTON,   11) \
+M(P2, MESSAGE,  12) \
+M(P2, GPIO,     13) \
 M(P2, R127,     127) \
 \
 M(P3, INFO,     1) \
@@ -429,6 +431,7 @@ M(P3, BUILD,    8) \
 M(P3, CRON,     9) \
 M(P3, MEM,      10) \
 M(P3, SEQUENCER, 11) \
+M(P3, LED,      12) \
 M(P3, R127,     127) \
 \
 M(P4, VALUE,    1) \
@@ -455,6 +458,7 @@ M(P4, PRESS,    21) \
 M(P4, RELEASE,  22) \
 M(P4, ON,       23) \
 M(P4, OFF,      24) \
+M(P4, HEARTBEAT, 25) \
 M(P4, R127,     127) \
 \
 M(P1, MSK, 0xFFul) \
@@ -513,6 +517,8 @@ struct PropNamespace {
 #define P_SYS_STORAGE_INFO_COUNT      (P1_SYS | P2_STORAGE | P3_INFO | P4_COUNT)
 #define P_SYS_CRON_LOCAL_VALUE        (P1_SYS | P2_CRON | P3_LOCAL | P4_VALUE)
 #define P_ERROR_SYS_MEM_ACCESS        (P1_ERROR | P2_SYS | P3_MEM | P4_ACCESS)
+
+#define P_HW_GPIO_LED_HEARTBEAT       (P1_HW | P2_GPIO | P3_LED | P4_HEARTBEAT)
 
 #ifdef __cplusplus
 extern "C" {

@@ -21,7 +21,8 @@ skip the macro and call gpio_init() directly.
 
 #define IS_OUTPUT_MODE(m) ((m) & 0x30)
 
-
+// Port speed can be included as part of the mode using bitwise-OR.
+// If omitted, the speed defaults to slow.
 #define GPIO_EDGE_SLOW        0x000
 #define GPIO_EDGE_MEDIUM      0x100
 #define GPIO_EDGE_FAST        0x200
@@ -67,6 +68,19 @@ typedef struct {
   void name ## __ctor(void) { \
     gpio_init(&name, port, pin, mode); \
   }
+
+/*
+ Metadata traits for GPIO are encoded into a 32-bit value:
+    [31 - 28][27 - 16][15 - 8][7 - 0]
+              mode     port    pin
+
+ mode is a 12-bit value combining pin mode and speed
+ */
+
+#define GPIO_META_ENCODE(port, pin, mode)     (((mode) << 16 ) | ((port) << 8) | (pin))
+#define GPIO_META_DECODE_MODE(v)              (((v) >> 16) & 0x3FF)
+#define GPIO_META_DECODE_PORT(v)              (((v) >> 8) & 0xFF)
+#define GPIO_META_DECODE_PIN(v)               ((v) & 0xFF)
 
 
 #ifdef __cplusplus
