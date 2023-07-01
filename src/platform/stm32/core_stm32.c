@@ -31,7 +31,7 @@ static int timer_bus(TIM_TypeDef *timer) {
   case TIM4_BASE: return BUS_APB1; break;
   case TIM5_BASE: return BUS_APB1; break;
 
-#  if defined BOARD_STM32F429I_DISC1 || defined PLATFORM_STM32F1
+#  if defined DEVICE_STM32F429 || defined PLATFORM_STM32F1
   case TIM6_BASE: return BUS_APB1; break;
   case TIM7_BASE: return BUS_APB1; break;
 
@@ -42,7 +42,7 @@ static int timer_bus(TIM_TypeDef *timer) {
   case TIM10_BASE: return BUS_APB2; break;
   case TIM11_BASE: return BUS_APB2; break;
 
-#  if defined BOARD_STM32F429I_DISC1 || defined PLATFORM_STM32F1
+#  if defined DEVICE_STM32F429 || defined PLATFORM_STM32F1
   case TIM12_BASE: return BUS_APB1; break;
   case TIM13_BASE: return BUS_APB1; break;
   case TIM14_BASE: return BUS_APB1; break;

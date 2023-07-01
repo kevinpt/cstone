@@ -32,7 +32,7 @@ void log_stm32_erase_sector(void *ctx, size_t sector_start, size_t sector_size) 
     .NbPages      = 1,
   };
 
-#elif defined BOARD_STM32F429I_DISC1
+#elif defined DEVICE_STM32F429
   uint32_t sector = flash_sector_index((uint8_t *)ctx + sector_start);
 //  printf("## ERASE sector 0x%08X  %lu...\n", (uintptr_t)sector_start, sector);
 
@@ -43,7 +43,8 @@ void log_stm32_erase_sector(void *ctx, size_t sector_start, size_t sector_size) 
     .NbSectors    = 1,
     .VoltageRange = FLASH_VOLTAGE_RANGE_3 // 2.7V - 3.6V (No Vpp)
   };
-#elif defined BOARD_STM32F401_BLACK_PILL
+
+#elif defined DEVICE_STM32F401
   uint32_t sector = flash_sector_index((uint8_t *)ctx + sector_start);
 //  printf("## ERASE sector 0x%08X  %lu...\n", (uintptr_t)sector_start, sector);
   // STM32F401 Sectors 0-3 = 16K, 4 = 64K, 5-7 = 128K

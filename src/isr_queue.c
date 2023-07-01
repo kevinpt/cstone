@@ -6,6 +6,8 @@
 #include "cstone/platform.h"
 #include "cstone/isr_queue.h"
 
+// https://rigtorp.se/ringbuffer/
+// https://www.linuxjournal.com/content/lock-free-multi-producer-multi-consumer-queue-ring-buffer
 
 // Modular increment without division
 // NOTE: This can be done with bit twiddling for branchless code but experimentation

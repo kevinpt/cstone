@@ -9,7 +9,7 @@ typedef struct {
 
   union {
     uint32_t source;  // Sender of message
-    uint32_t param32;
+    uint32_t param32; // Additional parameters following payload. FIXME: Preserve over external links?
     uint16_t param16[2];
   };
 
@@ -20,6 +20,7 @@ typedef struct {
 #define NO_TIMEOUT        0
 #define INFINITE_TIMEOUT  UINT32_MAX
 
+// Number of filters per UMsgFilterChunk
 #define UMSG_FILTERS_IN_CHUNK  4
 
 #define P_RSRC_SYS_LOCAL_TASK       (P1_RSRC | P2_SYS | P3_LOCAL | P4_TASK)
