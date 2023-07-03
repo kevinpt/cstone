@@ -32,6 +32,7 @@ typedef struct {
 typedef struct {
   uint32_t id;
   uint32_t value;
+  void    *object;    // Trait specific object configured by value
 } TraitDescriptor;
 
 
@@ -66,6 +67,7 @@ typedef struct {
 } ObjectMetadata;
 
 
+typedef void (*MetadataVisitor)(const TraitDescriptor *trait);
 
 #ifdef __cplusplus
 extern "C" {
@@ -73,6 +75,7 @@ extern "C" {
 
 void validate_metadata(void);
 bool metadata_find_trait(uint32_t id, uint32_t *value);
+int metadata_visit_traits(MetadataVisitor visitor, uint32_t id_prefix);
 
 #ifdef __cplusplus
 }

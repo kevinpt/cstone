@@ -8,6 +8,7 @@
 #include "cstone/profile.h"
 #include "cstone/obj_metadata.h"
 #include "cstone/crc32_stm32.h"
+#include "cstone/prop_id.h"
 
 #include "util/crc16.h"
 //#include "util/crc32.h"
@@ -120,5 +121,22 @@ bool metadata_find_trait(uint32_t id, uint32_t *value) {
     }
   }
   return false;
+}
+
+
+
+int metadata_visit_traits(MetadataVisitor visitor, uint32_t id_prefix) {
+  uint32_t id_mask = PROP_GET_MASK(id_prefix);
+  id_prefix &= id_mask;
+  int visited = 0;
+
+  for(int i = 0; i < g_metadata.trait_count; i++) {
+    if((g_metadata.traits[i].id & id_mask) == id_prefix) {
+      visitor(&g_metadata.traits[i]);
+      visited++;
+    }
+  }
+
+  return visited;
 }
 

@@ -81,6 +81,7 @@ set(CSTONE_SOURCE_COMMON
     src/dump_reg.c
     src/profile.c
     src/cron_events.c
+#    src/netmsg.c
     src/util/histogram.c
     src/util/bsd_string.c
     src/util/search.c
