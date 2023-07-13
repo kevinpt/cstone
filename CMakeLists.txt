@@ -105,6 +105,7 @@ set(CSTONE_SOURCE_STM32
     src/obj_metadata.c  # FIXME: Move to platform
     src/platform/stm32/core_stm32.c
     src/platform/stm32/uart_stm32.c
+#    src/platform/stm32/i2c_stm32.c
     src/platform/stm32/gpio_stm32.c
     src/platform/stm32/target_stm32.c
     src/platform/stm32/rtos_stm32.c
