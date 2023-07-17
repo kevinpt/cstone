@@ -34,6 +34,7 @@
 #include "cstone/blocking_io.h"
 #include "cstone/rtc_device.h"
 #include "cstone/obj_metadata.h"
+#include "cstone/cmds_core.h"
 
 #include "util/getopt_r.h"
 #include "util/string_ops.h"
@@ -51,16 +52,34 @@ extern LogDB      g_log_db;
 extern const ObjectMetadata g_metadata;
 #endif
 
+
+AppBuildInfoCB g_report_app_build_info_cb = NULL;
+
+
 static int32_t cmd_build(uint8_t argc, char *argv[], void *eval_ctx) {
-  printf("  %s\n", g_build_time);
-  // Component versions
 #define PAD_STR  "%12s"
+  printf(PAD_STR": %s\n", "Build", g_build_time);
+
+  // Component versions
   printf(PAD_STR": %s\n", "Firmware", APP_VERSION);
   printf(PAD_STR": %s\n", "FreeRTOS", tskKERNEL_VERSION_NUMBER);
 
+  // App component versions
+  if(g_report_app_build_info_cb) {
+    char item_buf[40];
+    for(int i = 0; g_report_app_build_info_cb(i, item_buf, sizeof item_buf); i++) {
+      if(item_buf[0] == '\0')
+        continue;
+
+      // We get back two strings in our buffer with a NUL separator
+      char *item_value = &item_buf[strlen(item_buf)+1]; // Get the second string
+      printf(PAD_STR": %s\n", item_buf, item_value);
+    }
+  }
+
 #ifdef PLATFORM_EMBEDDED
   // Metadata info
-  printf(PAD_STR": %08"PRIx32"\n", "Git SHA", g_metadata.git_sha);
+  printf("\n"PAD_STR": %08"PRIx32"\n", "Git SHA", g_metadata.git_sha);
   printf(PAD_STR": %s\n", "Type", g_metadata.debug_build ? A_RED "Debug" A_NONE : A_GRN "Release" A_NONE);
   validate_metadata();
 #endif

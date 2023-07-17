@@ -438,6 +438,7 @@ M(P2, PRNG,     10) \
 M(P2, BUTTON,   11) \
 M(P2, MESSAGE,  12) \
 M(P2, GPIO,     13) \
+M(P2, GUI,      14) \
 M(P2, R127,     127) \
 \
 M(P3, INFO,     1) \
