@@ -723,34 +723,42 @@ bool cron_load_from_prop_db(PropDB *db) {
 typedef void (FormatItem)(AppendRange *rng, int value);
 
 
-static unsigned cron__count_field_items(CronField *field, int max_value) {
-  unsigned count = 0;
-  int step = field->step > 0 ? field->step : 1;
-  int rng_end = field->rng_end > 0 ? field->rng_end : field->rng_start;
-  for(int i = field->rng_start; i <= rng_end && i <= max_value; i += step) {
-    count++;
-  }
-  return count;
-}
-
 
 static void cron__describe_field(CronField *field, int max_value, FormatItem fmt_cb, AppendRange *rng) {
-  unsigned count = cron__count_field_items(field, max_value);
-
   int step = field->step > 0 ? field->step : 1;
-  int rng_end = field->rng_end > 0 ? field->rng_end : field->rng_start;
-  for(int i = field->rng_start; i <= rng_end && i <= max_value; i += step) {
-    fmt_cb(rng, i);
+  int rng_start = field->rng_start;
+  int rng_end = field->rng_end > 0 ? field->rng_end : rng_start;
 
-    // Add comma between 3 or more items with a final conjunction
-    if(i + step <= rng_end) { // Not last
-      if(count > 2)
-        range_cat_str(rng, ", ");
-      else // No need for comma
-        range_cat_char(rng, ' ');
+  if(rng_start == WILDCARD_START) {
+    rng_start = 0;
+    rng_end = max_value;
+  }
 
-      if(i + 2*step > rng_end) // Penultimate item followed by conjunction
-        range_cat_str(rng, "and ");
+  if(step <= 1 && rng_end > rng_start) { // Range summary
+    fmt_cb(rng, rng_start);
+    range_cat_str(rng, " to ");
+    fmt_cb(rng, rng_end);
+
+  } else { // Itemized list
+    // Determine total item count to decide whether commas are needed
+    unsigned count = 0;
+    for(int i = rng_start; i <= rng_end && i <= max_value; i += step) {
+      count++;
+    }
+
+    for(int i = rng_start; i <= rng_end && i <= max_value; i += step) {
+      fmt_cb(rng, i);
+
+      // Add comma between 3 or more items with a final conjunction
+      if(i + step <= rng_end) { // Not last
+        if(count > 2)
+          range_cat_str(rng, ", ");
+        else // No need for comma
+          range_cat_char(rng, ' ');
+
+        if(i + 2*step > rng_end) // Penultimate item followed by conjunction
+          range_cat_str(rng, "and ");
+      }
     }
   }
 }
@@ -765,10 +773,11 @@ static void format_item_month(AppendRange *rng, int value) {
 }
 
 void cron_describe_month(CronTimeSpec *spec, AppendRange *rng) {
-  if(spec->month.rng_start == WILDCARD_START) {
+  if(spec->month.rng_start == WILDCARD_START && spec->month.step <= 1) {
     range_cat_str(rng, "every month");
   } else {
-    range_cat_str(rng, "in ");
+    bool itemized = (spec->month.step > 1) || (spec->month.rng_end == 0);
+    range_cat_str(rng, itemized ? "in " : "from ");
     cron__describe_field(&spec->month, 11, format_item_month, rng);
   }
 }
@@ -785,10 +794,11 @@ void cron_describe_week_day(CronTimeSpec *spec, AppendRange *rng) {
   if(!prioritize_day_of_week(spec)) {
     range_cat_str(rng, "");
   } else {
-    if(spec->day_of_week.rng_start == WILDCARD_START) {
+    if(spec->day_of_week.rng_start == WILDCARD_START && spec->day_of_week.step <= 1) {
       range_cat_str(rng, "every weekday");
     } else {
-      range_cat_str(rng, "every week on ");
+      bool itemized = (spec->day_of_week.step > 1) || (spec->day_of_week.rng_end == 0);
+      range_cat_str(rng, itemized ? "every week on " : "every week from ");
       cron__describe_field(&spec->day_of_week, 6, format_item_week_day, rng);
     }
   }
@@ -803,10 +813,11 @@ void cron_describe_month_day(CronTimeSpec *spec, AppendRange *rng) {
   if(prioritize_day_of_week(spec)) {
     range_cat_str(rng, "");
   } else {
-    if(spec->day_of_month.rng_start == WILDCARD_START) {
+    if(spec->day_of_month.rng_start == WILDCARD_START && spec->day_of_month.step <= 1) {
       range_cat_str(rng, "every day");
     } else {
-      range_cat_str(rng, "on date ");
+      bool itemized = (spec->day_of_month.step > 1) || (spec->day_of_month.rng_end == 0);
+      range_cat_str(rng, itemized ? "on date " : "from day ");
       cron__describe_field(&spec->day_of_month, 30, format_item_month_day, rng);
     }
   }
@@ -818,10 +829,11 @@ static void format_item_hour(AppendRange *rng, int value) {
 }
 
 void cron_describe_hour(CronTimeSpec *spec, AppendRange *rng) {
-  if(spec->hour.rng_start == WILDCARD_START) {
+  if(spec->hour.rng_start == WILDCARD_START && spec->hour.step <= 1) {
     range_cat_str(rng, "every hour");
   } else {
-    range_cat_str(rng, "at ");
+    bool itemized = (spec->hour.step > 1) || (spec->hour.rng_end == 0);
+    range_cat_str(rng, itemized ? "at " : "from ");
     cron__describe_field(&spec->hour, 23, format_item_hour, rng);
   }
 }
@@ -832,10 +844,11 @@ static void format_item_minute(AppendRange *rng, int value) {
 }
 
 void cron_describe_minute(CronTimeSpec *spec, AppendRange *rng) {
-  if(spec->minute.rng_start == WILDCARD_START) {
+  if(spec->minute.rng_start == WILDCARD_START && spec->minute.step <= 1) {
     range_cat_str(rng, "every minute");
   } else {
-    range_cat_str(rng, "at ");
+    bool itemized = (spec->minute.step > 1) || (spec->minute.rng_end == 0);
+    range_cat_str(rng, itemized ? "at " : "from ");
     cron__describe_field(&spec->minute, 59, format_item_minute, rng);
     range_cat_str(rng, " minutes past");
   }
@@ -879,6 +892,14 @@ int32_t cmd_cron(uint8_t argc, char *argv[], void *eval_ctx) {
 
     case 'h':
       puts("cron [-a <sched> -e <event>] [-p] [-o] [-d <event>] [-l] [-v] [-h]");
+      puts( "  Schedule:  \"Min Hr Day Mon DoW\"\n");
+      puts( "  Field values:\n"
+            "     n:  Once at specific time\n"
+            "     *:  All times");
+      puts( "   s-e:  Repeat every time from (s)tart to (e)nd\n"
+            " s-e/n:  Repeat every n-th time from (s)tart to (e)nd\n"
+            "   */n:  Repeat every n-th time\n");
+      puts( "  Event: \"<start>[, <end>]\"");
       return 0;
       break;
 
