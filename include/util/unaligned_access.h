@@ -415,30 +415,30 @@ static inline void set_unaligned_s64le(int64_t value, void *dest) {
 // C11 is required for generics
 #if __STDC_VERSION__ >= 201112L
 #  define get_unaligned(p)  _Generic((p), \
-      uint16_t *: get_unaligned_u16, \
-      int16_t * : get_unaligned_s16, \
-      uint32_t *: get_unaligned_u32,  \
-      int32_t * : get_unaligned_s32,  \
-      uint64_t *: get_unaligned_u64,  \
-      int64_t * : get_unaligned_s64  \
+      const uint16_t *: get_unaligned_u16, \
+      const int16_t * : get_unaligned_s16, \
+      const uint32_t *: get_unaligned_u32,  \
+      const int32_t * : get_unaligned_s32,  \
+      const uint64_t *: get_unaligned_u64,  \
+      const int64_t * : get_unaligned_s64  \
     )(p)
 
 #  define get_unaligned_be(p)  _Generic((p), \
-      uint16_t *: get_unaligned_u16be, \
-      int16_t * : get_unaligned_s16be, \
-      uint32_t *: get_unaligned_u32be,  \
-      int32_t * : get_unaligned_s32be,  \
-      uint64_t *: get_unaligned_u64be,  \
-      int64_t * : get_unaligned_s64be  \
+      const uint16_t *: get_unaligned_u16be, \
+      const int16_t * : get_unaligned_s16be, \
+      const uint32_t *: get_unaligned_u32be,  \
+      const int32_t * : get_unaligned_s32be,  \
+      const uint64_t *: get_unaligned_u64be,  \
+      const int64_t * : get_unaligned_s64be  \
     )(p)
 
 #  define get_unaligned_le(p)  _Generic((p), \
-      uint16_t *: get_unaligned_u16le, \
-      int16_t * : get_unaligned_s16le, \
-      uint32_t *: get_unaligned_u32le,  \
-      int32_t * : get_unaligned_s32le,  \
-      uint64_t *: get_unaligned_u64le,  \
-      int64_t * : get_unaligned_s64le  \
+      const uint16_t *: get_unaligned_u16le, \
+      const int16_t * : get_unaligned_s16le, \
+      const uint32_t *: get_unaligned_u32le,  \
+      const int32_t * : get_unaligned_s32le,  \
+      const uint64_t *: get_unaligned_u64le,  \
+      const int64_t * : get_unaligned_s64le  \
     )(p)
 
 
