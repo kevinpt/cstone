@@ -80,6 +80,38 @@ DEALINGS IN THE SOFTWARE.
 #endif
 
 
+// Foreground and background codes to construct format with A_CLR()
+
+#  define FG_BLK "30"
+#  define FG_RED "31"
+#  define FG_GRN "32"
+#  define FG_YLW "33"
+#  define FG_BLU "34"
+#  define FG_MAG "35"
+#  define FG_CYN "36"
+#  define FG_WHT "37"
+
+#  define FG_BBLK "90"
+#  define FG_BRED "91"
+#  define FG_BGRN "92"
+#  define FG_BYLW "93"
+#  define FG_BBLU "94"
+#  define FG_BMAG "95"
+#  define FG_BCYN "96"
+#  define FG_BWHT "97"
+
+#  define BG_BLK "40"
+#  define BG_RED "41"
+#  define BG_GRN "42"
+#  define BG_YLW "43"
+#  define BG_BLU "44"
+#  define BG_MAG "45"
+#  define BG_CYN "46"
+#  define BG_WHT "47"
+
+#define A_CLR(fg, bg)  "\33[" fg ";" bg "m"
+
+
 // Color codes. Use these to track the current active color selection.
 enum ANSIColor {
   ANSI_NONE = 0,
